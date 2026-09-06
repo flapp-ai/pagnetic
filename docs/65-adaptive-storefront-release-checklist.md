@@ -2,7 +2,7 @@
 
 Date: 2026-09-06  
 Contract: `adaptive-a-1` / `adaptive-owner-review-a1`  
-State: AP-06 application and Shopify extension deployed safely; live treatment/pilot approval remains closed pending alert delivery and external QA/content gates.
+State: AP-06 application and Shopify extension deployed safely; all production infrastructure readiness checks pass. Live treatment/pilot approval remains closed pending external QA/content gates.
 
 ## Verified deployment target snapshot
 
@@ -10,7 +10,7 @@ Owner-authorized deployment on 2026-09-06 released source `720da7950b50a93dbffd8
 
 Startup applied only additive migration `20260906120000_adaptive_package_reviews`; Prisma reports all 28 migrations applied and the database schema current. Startup automation/privacy requests returned 200. A new encrypted off-volume backup was uploaded, read back and restored successfully at `2026-09-06T17:09:14.492Z`; remote backup objects were not removed.
 
-The owner-approved terms date is active as `2026-09-06`. Production verification confirms Shopify billing, v2 serving, shadow mode, model use and offer publication are all explicitly `false`, so Original remains the serving state. The current production checker passes every code, database, identity, capacity, proxy, encryption, Shopify and recovery gate except `alertDeliveryConfigured`, because `ALERT_WEBHOOK_URL` has not yet been supplied. Shopify app/configuration extensions were also built, validated and released as `pagnetic-ap06-20260906` (version ID `1117888282625`). This release is not App Store publication or treatment activation.
+The owner-approved terms date is active as `2026-09-06`. Production verification confirms Shopify billing, v2 serving, shadow mode, model use and offer publication are all explicitly `false`, so Original remains the serving state. A Make HTTPS alert endpoint accepted the setup payload with HTTP 200 and is installed as an encrypted Fly secret. After the secret rollout, machine version 24 is healthy with 1/1 checks passing, a new encrypted off-volume backup/readback/restore verified at `2026-09-06T18:51:50.373Z`, and **all 47 production readiness checks pass**. Email routing and owner receipt acknowledgement remain an external operational gate until the Make scenario is enabled and its test email is confirmed. Shopify app/configuration extensions were also built, validated and released as `pagnetic-ap06-20260906` (version ID `1117888282625`). This release is not App Store publication or treatment activation.
 
 ## Code-controlled gate
 
