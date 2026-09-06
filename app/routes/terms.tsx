@@ -52,11 +52,15 @@ export default function Terms() {
       </p>
       <h2>Founding-beta offer</h2>
       <p>
-        No payment is requested before the first mature
-        Original-versus-Universal experiment produces a positive, negative, or
-        inconclusive result. A/A validation does not end free access. Continued
-        paid use, if offered, requires the merchant to affirmatively accept the
-        then-disclosed Shopify plan and price.
+        Public previews are free. For newly accepted founding stores, the offer
+        is $49 USD per month after a 30-day trial, covering one active product
+        and up to three campaign messages. Applications do not start a trial.
+        Subscription access requires affirmative approval through Shopify;
+        Shopify displays the trial and billing dates. Cancel before the trial
+        ends to avoid the subscription charge. A trial does not guarantee a
+        statistically conclusive result. Previously granted free-until-result
+        access remains governed by that grant and is not automatically converted
+        to a paid subscription.
       </p>
       <h2>Experiments</h2>
       <p>

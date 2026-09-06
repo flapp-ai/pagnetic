@@ -1,6 +1,6 @@
 # Public-Beta Launch Checklist
 
-Status: release gate  
+Status: historical checklist; current deployment evidence is in doc65 and approved controlled-launch/commercial direction is in doc66. Pricing and Public distribution with limited visibility are owner-approved as of 2026-09-06; configuration and Shopify review remain separate gates.
 Scope: first 25 stores, one application writer, one hero product per store
 
 ## Code and product

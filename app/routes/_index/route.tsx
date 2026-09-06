@@ -188,7 +188,7 @@ export default function Index() {
       <section className={styles.hero} id="top">
         <div>
           <p className={styles.eyebrow}>A safer adaptive PDP experiment</p>
-          <h1>Show each campaign the product message it came for.</h1>
+          <h1>Make your product page match your ads.</h1>
           <p className={styles.intro}>
             Paste one public Shopify product URL and, if relevant, the exact ad
             message sending traffic there. See one evidence-grounded opportunity
@@ -243,11 +243,13 @@ export default function Index() {
         </div>
         <aside className={styles.promiseCard}>
           <span>Founding beta</span>
-          <strong>Free until your first valid experiment result.</strong>
+          <strong>Your preview is free. Apply for early access.</strong>
           <p>
-            A/A validation does not end the beta. No result means no payment
-            request.
+            We are selecting our first five Shopify stores. Founding Beta is
+            $49 USD/month after a 30-day trial, with one active product and up to
+            three campaign messages. Applications do not start a trial or charge.
           </p>
+          <p><a href="#apply" style={{ color: "white" }}>Apply for early access →</a></p>
         </aside>
       </section>
 
@@ -326,11 +328,12 @@ export default function Index() {
             <div className={styles.installCard}>
               <div>
                 <p className={styles.eyebrow}>Next step</p>
-                <h2>Test this on your real traffic.</h2>
+                <h2>Like your preview? Apply to test it.</h2>
                 <p>
-                  Install free, approve the exact messages, and pay nothing
-                  until a mature real comparison produces a result.
+                  We review your product, ads, and traffic before inviting you.
+                  Already invited? Continue to your Shopify app below.
                 </p>
+                <a href="#apply">Apply for early access</a>
               </div>
               <Form
                 className={styles.installForm}
@@ -345,7 +348,7 @@ export default function Index() {
                     required
                   />
                 </label>
-                <button type="submit">Install founding beta</button>
+                <button type="submit">Continue with Shopify</button>
               </Form>
             </div>
           ) : null}
@@ -389,6 +392,38 @@ export default function Index() {
             </p>
           </article>
         </div>
+      </section>
+      <section className={styles.how} id="apply">
+        <p className={styles.eyebrow}>Applications open · First cohort: five stores</p>
+        <h2>Bring one product and your ads.</h2>
+        <p>
+          Best for Shopify stores already sending paid traffic to a product page.
+          We help you review the messages, check measurement, and approve the
+          changes before a test starts. Results can be positive, negative, or
+          inconclusive; a 30-day trial does not guarantee enough data.
+        </p>
+        <p>
+          Email your store URL, one product URL, two or three ad messages, and
+          approximate monthly product-page visits and orders. Include whether
+          you own the store or manage it for a client. Estimates are fine.
+        </p>
+        <p>
+          <a href={`mailto:support@flapp.ist?subject=${encodeURIComponent("Pagnetic early access application")}&body=${encodeURIComponent("Store URL:\nProduct URL:\nAd messages (2–3):\nMonthly product-page visits (estimate):\nMonthly product orders (estimate):\nRole (owner / agency):\nHow did you hear about Pagnetic?:\n")}`}>
+            Apply by email
+          </a>
+          {" "}to support@flapp.ist. Your email app will open; send the message to
+          submit your application. We reply with fit and next steps.
+        </p>
+        <p>
+          Free previews remain available to everyone. The founding offer is
+          limited to the first 25 accepted stores, admitted in small cohorts.
+          Trial and paid access require your Shopify subscription approval;
+          billing setup must be complete before we offer activation. Cancel
+          before the trial ends to avoid the subscription charge.
+        </p>
+        <p>We use application details to assess fit and coordinate onboarding.
+          {" "}<a href="/privacy">Read our privacy policy</a>.
+        </p>
       </section>
       <footer className={styles.footer}>
         <span>Pagnetic founding beta</span>

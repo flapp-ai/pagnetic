@@ -1,10 +1,10 @@
 # Shopify App Store Listing Draft
 
-Status: copy-ready draft; owner identity, approved assets, pricing, demo URL, and Shopify review remain outstanding
+Status: owner approved pricing and Public distribution with limited visibility on 2026-09-06. Assets, actual submission configuration, reviewer verification and Shopify approval remain to be completed.
 
 ## App name
 
-Adaptive Storefront
+Pagnetic
 
 ## Subtitle
 
@@ -24,7 +24,7 @@ Turn one product page into a controlled message experiment. Preview source-groun
 
 ## Founding-beta pricing text
 
-Free until your first valid experiment result. A/A validation does not end free access. Paid continuation, if offered, is shown and accepted through Shopify before any charge.
+Free preview. Founding Beta: $49 USD/month after a 30-day trial, one active product and up to three campaign messages. Shopify subscription approval is required. Applications do not start billing. Existing free-until-result grants are preserved. A trial does not guarantee a conclusive experiment result.
 
 ## Search terms
 
