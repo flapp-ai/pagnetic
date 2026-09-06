@@ -1,0 +1,7 @@
+{
+  "canonicalSourceSha256": "8605c7812a953c614a51e3859528cb239fc82aff4c5801eff0e390037d7579b4",
+  "postgresSchemaSha256": "06438cbaa33a852afc4c8685c5a29fd608b2ab06da1a243ff6b137185742d276",
+  "migration": "20260906074136_06438cbaa33a",
+  "generatedAt": "2026-09-06T07:41:36.275Z",
+  "reviewedForProduction": false
+}

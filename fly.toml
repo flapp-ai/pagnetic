@@ -1,0 +1,53 @@
+app = "pagnetic"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "3000"
+  SHOPIFY_APP_URL = "https://pagnetic.fly.dev"
+  SCOPES = "read_products,read_customer_events,read_orders,write_app_proxy,write_pixels"
+  DATABASE_URL = "file:/data/pilot.sqlite"
+  BACKUP_DESTINATION = "/data/backups"
+  PUBLIC_BETA_MAX_STORES = "25"
+  PUBLIC_FUNNEL_RETENTION_DAYS = "90"
+  APP_INSTANCE_COUNT = "1"
+  SHOPIFY_BILLING_ENABLED = "false"
+  PAGNETIC_V2_ENABLED = "false"
+  PAGNETIC_V2_SHADOW_ENABLED = "false"
+  PAGNETIC_V2_MODEL_ENABLED = "false"
+  PAGNETIC_V2_OFFER_PUBLISHABLE = "false"
+  PUBLIC_BETA_PLAN_NAME = "Founding Beta"
+  PUBLIC_BETA_MONTHLY_PRICE = "49"
+  PUBLIC_APP_NAME = "Pagnetic"
+  PUBLIC_COMPANY_NAME = "Flapp Bilişim A.Ş."
+  SUPPORT_EMAIL = "support@flapp.ist"
+  PRIVACY_CONTACT_EMAIL = "privacy@flapp.ist"
+  HOSTING_PROVIDER_NAME = "Fly.io"
+  TERMS_EFFECTIVE_DATE = "2026-09-06"
+  TRUST_PROXY_HEADERS = "true"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/healthz"
+
+[mounts]
+  source = "adaptive_data"
+  destination = "/data"
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -1,0 +1,32 @@
+node_modules/
+
+# macOS
+.DS_Store
+
+# Build/runtime output
+/.cache/
+/build/
+/app/build/
+/public/build/
+/public/_dev/
+/app/public/build/
+/.react-router/
+
+# Local database
+/prisma/dev.sqlite
+/prisma/dev.sqlite-journal
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Shopify CLI state and generated extension output
+/.shopify/
+.shopify.lock
+/extensions/*/dist/
+
+# Tool caches
+*.tsbuildinfo
+node_modules/.cache/
+/tmp/

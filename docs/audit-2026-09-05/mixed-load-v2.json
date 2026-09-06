@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-05T11:38:55.197Z",
+  "environment": {
+    "database": "isolated SQLite single-writer fixture",
+    "runtime": "v24.19.0",
+    "tenantCount": 4,
+    "durationSeconds": 5,
+    "productionCapacityClaim": false
+  },
+  "implementationHashes": {
+    "harness": "8e4ec39788bc6cc06f495a4f01c999dfea23394adb79a139967c7265566414c6",
+    "decisionService": "c28a5acd3cbf08d3894591e4540535c590b059cd8dc047af5361d350a866a1ae",
+    "webhookInbox": "39ddbfdd28963af131cd719940cfebfe40723f56f4d24a34e7e6655fee812089",
+    "reportService": "7bf0759ea6ccab2f6a6553b87ed2fa6135bb463ae72aae80e9a62980758df6a0",
+    "storefrontRuntime": "a946bb05fadcba246bfd337bfd2baa6a7057d65b50012710ee1460c31d484f1a"
+  },
+  "declaredForecastPerSecond": {
+    "storefrontDecisionsPerSecond": 8,
+    "financialWebhooksPerSecond": 2,
+    "reportReadsPerSecond": 1
+  },
+  "exercisedMultiplier": 2,
+  "scheduledPerSecond": {
+    "decision": 16,
+    "webhook": 4,
+    "report": 2
+  },
+  "totals": {
+    "attempted": 110,
+    "decisions": 80,
+    "webhooks": 20,
+    "reportReads": 10,
+    "errors": 0
+  },
+  "latency": {
+    "decision": {
+      "count": 80,
+      "p50Ms": 10.066,
+      "p95Ms": 16.774,
+      "p99Ms": 26.566,
+      "maxMs": 26.566
+    },
+    "webhook": {
+      "count": 20,
+      "p50Ms": 13.58,
+      "p95Ms": 28.08,
+      "p99Ms": 28.231,
+      "maxMs": 28.231
+    },
+    "report": {
+      "count": 10,
+      "p50Ms": 8.732,
+      "p95Ms": 14.224,
+      "p99Ms": 14.224,
+      "maxMs": 14.224
+    },
+    "schedulerDispatchLag": {
+      "count": 110,
+      "p50Ms": 0.51,
+      "p95Ms": 5.24,
+      "p99Ms": 8.072,
+      "maxMs": 9.445
+    }
+  },
+  "fallback": {
+    "count": 0,
+    "percent": 0
+  },
+  "queue": {
+    "pending": 20,
+    "oldestAgeMs": 6445
+  },
+  "memory": {
+    "rssStartBytes": 117800960,
+    "rssPeakBytes": 144982016,
+    "rssEndBytes": 145358848
+  },
+  "tenantFairness": {
+    "everyTenantSucceeded": true,
+    "perTenant": [
+      {
+        "tenantIndex": 0,
+        "shop": "mixed-load-0.myshopify.com",
+        "attempted": 20,
+        "succeeded": 20,
+        "decisionLatency": {
+          "count": 20,
+          "p50Ms": 13.257,
+          "p95Ms": 18.922,
+          "p99Ms": 26.566,
+          "maxMs": 26.566
+        }
+      },
+      {
+        "tenantIndex": 1,
+        "shop": "mixed-load-1.myshopify.com",
+        "attempted": 20,
+        "succeeded": 20,
+        "decisionLatency": {
+          "count": 20,
+          "p50Ms": 9.159,
+          "p95Ms": 10.803,
+          "p99Ms": 12.836,
+          "maxMs": 12.836
+        }
+      },
+      {
+        "tenantIndex": 2,
+        "shop": "mixed-load-2.myshopify.com",
+        "attempted": 20,
+        "succeeded": 20,
+        "decisionLatency": {
+          "count": 20,
+          "p50Ms": 11.154,
+          "p95Ms": 16.774,
+          "p99Ms": 19.888,
+          "maxMs": 19.888
+        }
+      },
+      {
+        "tenantIndex": 3,
+        "shop": "mixed-load-3.myshopify.com",
+        "attempted": 20,
+        "succeeded": 20,
+        "decisionLatency": {
+          "count": 20,
+          "p50Ms": 8.829,
+          "p95Ms": 13.676,
+          "p99Ms": 15.495,
+          "maxMs": 15.495
+        }
+      }
+    ]
+  },
+  "mobileLatencyFault": {
+    "deadlineMs": 1500,
+    "injectedDeliveryDelayMs": 1600,
+    "attempts": 4,
+    "originalFallbacks": 4
+  },
+  "serverDecisionBudget": {
+    "prospectiveP95Ms": 150,
+    "passed": true
+  },
+  "limitations": [
+    "Synthetic rates are declared test inputs, not observed cohort traffic or a merchant-cap estimate.",
+    "Prisma does not expose database lock-wait duration; DB wait instrumentation remains unavailable in this fixture.",
+    "The mobile delivery fault applies the production 1500ms fallback contract at the client boundary; supported-device/browser timing remains S10 evidence.",
+    "SQLite on one local host does not establish PostgreSQL provider, Fly region, Shopify proxy or population Core Web Vitals capacity."
+  ],
+  "elapsedMs": 6449.499,
+  "errors": []
+}

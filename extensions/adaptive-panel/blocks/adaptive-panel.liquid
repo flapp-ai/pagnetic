@@ -1,0 +1,71 @@
+<div
+  id="adaptive-panel-{{ block.id }}"
+  class="adaptive-panel"
+  data-adaptive-panel
+  data-block-id="{{ block.id | escape }}"
+  data-product-id="{{ product.id | escape }}"
+  data-product-variant-ids="{{ product.variants | map: 'id' | join: ',' | escape }}"
+  data-experiment-id="{{ block.settings.experiment_id | escape }}"
+  data-mode="{{ block.settings.mode | escape }}"
+  data-angle-parameter="{{ block.settings.angle_parameter | escape }}"
+  data-allow-qa-overrides="{{ block.settings.allow_qa_overrides }}"
+  data-runtime-endpoint="{{ block.settings.runtime_endpoint | escape }}"
+  data-block-version="adaptive-panel-v2"
+  aria-live="polite"
+  hidden
+></div>
+
+<script src="{{ 'adaptive-vitals.js' | asset_url }}" defer="defer"></script>
+<script src="{{ 'adaptive-panel-v2.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Adaptive Panel",
+  "target": "section",
+  "javascript": "adaptive-panel.js",
+  "stylesheet": "adaptive-panel.css",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "select",
+      "id": "mode",
+      "label": "Runtime policy",
+      "default": "original",
+      "options": [
+        { "value": "original", "label": "Original (panel hidden)" },
+        { "value": "autopilot", "label": "Pagnetic Autopilot" },
+        { "value": "universal", "label": "Universal experience" },
+        { "value": "matched", "label": "Matched experience" },
+        { "value": "experiment", "label": "50/50 original vs matched" }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "experiment_id",
+      "label": "Experiment ID",
+      "default": "technical-proof-v0"
+    },
+    {
+      "type": "text",
+      "id": "angle_parameter",
+      "label": "Angle query parameter",
+      "default": "adaptive_angle"
+    },
+    {
+      "type": "checkbox",
+      "id": "allow_qa_overrides",
+      "label": "Allow adaptive_arm QA parameter",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "runtime_endpoint",
+      "label": "App proxy path",
+      "default": "/apps/adaptive-storefront",
+      "info": "Change this only if the store customized the app proxy URL."
+    }
+  ]
+}
+{% endschema %}

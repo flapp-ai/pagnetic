@@ -1,0 +1,14 @@
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@shopify/cli@4.7.1'
+  - '@shopify/shopify-app-react-router@2.1.0'
+overrides:
+  deepmerge-ts: ^8.0.0
+  p-map: ^4.0.0
+  qs: ^6.16.0

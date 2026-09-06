@@ -1,0 +1,24 @@
+# Pilot Release Record
+
+- Release identifier:
+- Commit/build identifier:
+- Shopify app version:
+- Release owner:
+- Date/time (UTC):
+- Partner shop:
+- Hero product:
+- Published theme ID:
+- Experiment key/version:
+- Registration hash:
+- Approved content hashes:
+- Campaign mapping versions:
+- `pnpm check` evidence:
+- `pnpm check:production` evidence:
+- Backup/checksum evidence:
+- Restore-drill evidence and recovery time:
+- External health-monitor evidence:
+- Alert-delivery test:
+- Nine QA evidence references:
+- Open risks/exceptions and owner:
+- Launch decision and approver:
+- Rollback rehearsal result:

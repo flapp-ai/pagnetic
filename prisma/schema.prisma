@@ -1,0 +1,1504 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model Merchant {
+  id                     String                   @id @default(cuid())
+  shop                   String                   @unique
+  displayName            String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  installedAt            DateTime                 @default(now())
+  apiVersion             String                   @default("2026-07")
+  grantedScopesJson      String                   @default("[]")
+  lastScopeSyncAt        DateTime?
+  products               Product[]
+  sourceDocuments        SourceDocument[]
+  evidence               EvidenceObject[]
+  angles                 AcquisitionAngle[]
+  mappings               CampaignMapping[]
+  experiences            ExperienceVersion[]
+  approvals              Approval[]
+  auditEntries           AuditLog[]
+  experiments            Experiment[]
+  assignments            Assignment[]
+  financialRevisions     FinancialOrderRevision[]
+  decisions              Decision[]
+  renderEvents           RenderEvent[]
+  commerceEvents         CommerceEvent[]
+  orders                 StoreOrder[]
+  refunds                StoreRefund[]
+  orderAttributions      OrderAttribution[]
+  pixelCredential        PixelCredential?
+  measurementSync        MeasurementSyncState?
+  runtimeControl         RuntimeControl?
+  incidents              Incident[]
+  confounders            Confounder[]
+  safetyEvaluations      SafetyEvaluation[]
+  pilotSettings          PilotSettings?
+  qualifications         ProductQualification[]
+  themeActivations       ThemeActivation[]
+  qaChecks               PilotQaCheck[]
+  roles                  PilotRole[]
+  alerts                 OperationalAlert[]
+  automationRuns         AutomationRun[]
+  candidateScores        ProductCandidateScore[]
+  autopilotPlans         AutopilotPlan[]
+  autopilotTransitions   AutopilotTransition[]
+  merchantNotices        MerchantNotice[]
+  brandProfile           BrandProfile?
+  betaEntitlement        BetaEntitlement?
+  messageDiagnoses       MessageDiagnosis[]
+  qualificationV2        QualificationSnapshot[]
+  deploymentVersions     DeploymentVersion[]
+  activeDeployments      ActiveDeployment[]
+  adaptivePackageReviews AdaptivePackageReview[]
+  visitorOutcomes        VisitorOutcome[]
+  webhookInbox           WebhookInbox[]
+  orderLedger            OrderLedger[]
+  refundLedger           RefundLedger[]
+  attributionsV2         AttributionV2[]
+  qaEvidenceV2           QaEvidence[]
+  jobs                   Job[]
+  outboxEvents           OutboxEvent[]
+  subscriptionState      SubscriptionState?
+  actionReceipts         ActionReceipt[]
+  evaluationConsumptions EvaluationConsumption[]
+}
+
+model BetaEntitlement {
+  id                          String    @id @default(cuid())
+  merchantId                  String    @unique
+  status                      String    @default("FREE_UNTIL_RESULT")
+  offerVersion                String    @default("founding-beta-v1")
+  startedAt                   DateTime  @default(now())
+  firstValidResultAt          DateTime?
+  firstValidResultState       String?
+  firstValidResultSnapshotId  String?
+  lastResultSnapshotId        String?
+  lastResultState             String?
+  freeExtensionUntil          DateTime?
+  revisedExperimentsRemaining Int       @default(0)
+  offerPriceUsd               Int       @default(49)
+  heroProductId               String?
+  activationStage             String    @default("CONNECTED")
+  activationStartedAt         DateTime  @default(now())
+  paidAt                      DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  merchant                    Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model PublicFunnelEvent {
+  id              String   @id @default(cuid())
+  requestId       String   @unique
+  anonymousIdHash String
+  eventType       String
+  productHostHash String?
+  source          String   @default("LANDING_PAGE")
+  metadataJson    String   @default("{}")
+  occurredAt      DateTime @default(now())
+
+  @@index([eventType, occurredAt])
+  @@index([anonymousIdHash, occurredAt])
+}
+
+model BrandProfile {
+  id              String    @id @default(cuid())
+  merchantId      String    @unique
+  sourceHash      String
+  voiceTraitsJson String
+  vocabularyJson  String
+  analysisJson    String
+  status          String    @default("GENERATED")
+  provider        String    @default("LOCAL_DETERMINISTIC")
+  modelId         String?
+  promptVersion   String    @default("brand-profile-v1")
+  generatedAt     DateTime  @default(now())
+  approvedBy      String?
+  approvedAt      DateTime?
+  merchant        Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id                 String                  @id @default(cuid())
+  merchantId         String
+  shopifyProductId   String
+  title              String
+  handle             String
+  status             String
+  sourceVersion      String
+  sourceHash         String
+  sourceSnapshot     String
+  syncedAt           DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  merchant           Merchant                @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  sourceDocuments    SourceDocument[]
+  evidence           EvidenceObject[]
+  experiences        ExperienceVersion[]
+  experiments        Experiment[]
+  decisions          Decision[]
+  qualification      ProductQualification?
+  themeActivation    ThemeActivation?
+  qaChecks           PilotQaCheck[]
+  candidateScores    ProductCandidateScore[]
+  autopilotPlans     AutopilotPlan[]
+  messageDiagnoses   MessageDiagnosis[]
+  qualificationV2    QualificationSnapshot[]
+  deploymentVersions DeploymentVersion[]
+  activeDeployment   ActiveDeployment?
+  adaptivePackageReviews AdaptivePackageReview[]
+
+  @@unique([merchantId, shopifyProductId])
+  @@index([merchantId, status])
+}
+
+model AdaptivePackageReview {
+  id                 String   @id @default(cuid())
+  merchantId         String
+  productId          String
+  packageHash        String
+  payloadJson        String
+  status             String   @default("PENDING")
+  createdBy          String
+  approvedBy         String?
+  approvedAt         DateTime?
+  createdAt          DateTime @default(now())
+  merchant           Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, productId, packageHash])
+  @@index([merchantId, productId, status])
+}
+
+model SourceDocument {
+  id            String           @id @default(cuid())
+  merchantId    String
+  productId     String?
+  sourceType    String
+  sourceId      String
+  sourceVersion String
+  payloadJson   String
+  contentHash   String
+  capturedAt    DateTime         @default(now())
+  merchant      Merchant         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product       Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  evidence      EvidenceObject[]
+
+  @@unique([merchantId, sourceId, sourceVersion])
+  @@index([merchantId, productId])
+}
+
+model EvidenceObject {
+  id                      String          @id @default(cuid())
+  merchantId              String
+  productId               String?
+  sourceDocumentId        String
+  sourceType              String
+  sourceId                String
+  sourceVersion           String
+  verbatimText            String
+  productScope            String
+  variantScope            String?
+  marketScope             String          @default("ALL")
+  localeScope             String          @default("en")
+  effectiveFrom           DateTime        @default(now())
+  expiresAt               DateTime?
+  requiredQualifiersJson  String          @default("[]")
+  substantiationReference String?
+  merchantStatus          String          @default("PENDING_REVIEW")
+  riskClass               String          @default("LOW")
+  sourceHash              String
+  capturedAt              DateTime        @default(now())
+  merchant                Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product                 Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sourceDocument          SourceDocument  @relation(fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  claimLinks              ClaimEvidence[]
+
+  @@unique([merchantId, sourceId, sourceVersion])
+  @@index([merchantId, productId, merchantStatus])
+}
+
+model AcquisitionAngle {
+  id          String              @id @default(cuid())
+  merchantId  String
+  key         String
+  label       String
+  description String?
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  merchant    Merchant            @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  mappings    CampaignMapping[]
+  experiences ExperienceVersion[]
+
+  @@unique([merchantId, key])
+}
+
+model CampaignMapping {
+  id                   String           @id @default(cuid())
+  merchantId           String
+  angleId              String
+  version              Int
+  signature            String
+  utmSource            String
+  utmCampaign          String
+  utmContent           String
+  campaignEvidenceRef  String?
+  campaignEvidenceHash String?
+  campaignLocale       String           @default("en")
+  status               String           @default("ACTIVE")
+  fallback             String           @default("ORIGINAL")
+  createdBy            String
+  createdAt            DateTime         @default(now())
+  merchant             Merchant         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  angle                AcquisitionAngle @relation(fields: [angleId], references: [id], onDelete: Restrict)
+
+  @@unique([merchantId, signature, version])
+  @@index([merchantId, signature, status])
+}
+
+model ExperienceVersion {
+  id                     String            @id @default(cuid())
+  merchantId             String
+  productId              String
+  angleId                String?
+  version                Int
+  status                 String            @default("DRAFT")
+  headline               String
+  supportingLine         String?
+  benefitsJson           String
+  proofItemsJson         String            @default("[]")
+  reassurance            String?
+  contentHash            String
+  sourceSnapshotHash     String
+  riskClass              String            @default("LOW")
+  provider               String?
+  modelId                String?
+  promptVersion          String
+  rawOutputJson          String
+  validationFindingsJson String            @default("[]")
+  createdAt              DateTime          @default(now())
+  publishedAt            DateTime?
+  staleAt                DateTime?
+  merchant               Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product                Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  angle                  AcquisitionAngle? @relation(fields: [angleId], references: [id], onDelete: Restrict)
+  claims                 Claim[]
+  approval               Approval?
+  decisions              Decision[]
+
+  @@unique([productId, angleId, version])
+  @@index([merchantId, status])
+}
+
+model Claim {
+  id                     String            @id @default(cuid())
+  experienceVersionId    String
+  claimText              String
+  claimType              String
+  transformationType     String
+  scopeJson              String
+  requiredQualifiersJson String            @default("[]")
+  riskClass              String            @default("LOW")
+  validationFindingsJson String            @default("[]")
+  createdAt              DateTime          @default(now())
+  experienceVersion      ExperienceVersion @relation(fields: [experienceVersionId], references: [id], onDelete: Cascade)
+  evidenceLinks          ClaimEvidence[]
+
+  @@index([experienceVersionId])
+}
+
+model ClaimEvidence {
+  claimId    String
+  evidenceId String
+  claim      Claim          @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  evidence   EvidenceObject @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
+
+  @@id([claimId, evidenceId])
+}
+
+model Approval {
+  id                   String            @id @default(cuid())
+  merchantId           String
+  experienceVersionId  String            @unique
+  approver             String
+  approvedAt           DateTime          @default(now())
+  contentHash          String
+  evidenceSnapshotHash String
+  policyVersion        String
+  merchant             Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  experienceVersion    ExperienceVersion @relation(fields: [experienceVersionId], references: [id], onDelete: Restrict)
+
+  @@index([merchantId, approvedAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  merchantId   String
+  actor        String
+  action       String
+  resourceType String
+  resourceId   String
+  detailsJson  String
+  createdAt    DateTime @default(now())
+  merchant     Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, createdAt])
+}
+
+model PixelCredential {
+  id          String   @id @default(cuid())
+  merchantId  String   @unique
+  webPixelId  String?
+  tokenHash   String   @unique
+  endpoint    String
+  status      String   @default("ACTIVE")
+  activatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  merchant    Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model Experiment {
+  id                    String                     @id @default(cuid())
+  merchantId            String
+  productId             String
+  key                   String
+  version               Int                        @default(1)
+  status                String                     @default("ACTIVE")
+  salt                  String
+  saltVersion           Int                        @default(1)
+  controlPercentage     Int                        @default(50)
+  controlPolicy         String                     @default("ORIGINAL")
+  treatmentPolicy       String                     @default("MATCHED")
+  attributionWindowDays Int                        @default(7)
+  startedAt             DateTime                   @default(now())
+  endedAt               DateTime?
+  createdAt             DateTime                   @default(now())
+  merchant              Merchant                   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product               Product                    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  assignments           Assignment[]
+  decisions             Decision[]
+  orderAttributions     OrderAttribution[]
+  registration          ExperimentRegistration?
+  resultSnapshots       ExperimentResultSnapshot[]
+  incidents             Incident[]
+  confounders           Confounder[]
+  safetyEvaluations     SafetyEvaluation[]
+  deploymentVersions    DeploymentVersion[]
+  visitorOutcomes       VisitorOutcome[]
+  attributionsV2        AttributionV2[]
+  enrollmentStartedAt   DateTime?
+  enrollmentClosedAt    DateTime?
+  attributionClosesAt   DateTime?
+  financialMaturityAt   DateTime?
+  finalizedAt           DateTime?
+  finalResultSnapshotId String?
+  privacyAffectedAt     DateTime?
+  stopReason            String?
+  lifecycleVersion      Int                        @default(1)
+
+  @@unique([merchantId, key, version])
+  @@index([merchantId, status])
+}
+
+model FinancialOrderRevision {
+  id               String                  @id @default(cuid())
+  merchantId       String
+  shopifyOrderId   String
+  sourceUpdatedAt  DateTime
+  firstObservedAt  DateTime
+  sourceHash       String
+  revisionHash     String
+  canonicalPayload String
+  createdAt        DateTime                @default(now())
+  merchant         Merchant                @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  links            FinancialRevisionLink[]
+
+  @@unique([merchantId, shopifyOrderId, revisionHash])
+  @@index([merchantId, shopifyOrderId, sourceUpdatedAt])
+}
+
+model FinancialRevisionLink {
+  id            String                 @id @default(cuid())
+  revisionId    String
+  merchantId    String
+  experimentId  String
+  assignmentId  String
+  shopifyLineId String
+  signedRefHash String
+  revision      FinancialOrderRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@unique([revisionId, shopifyLineId])
+  @@index([merchantId, experimentId, assignmentId])
+}
+
+model ExperimentRegistration {
+  id                    String     @id @default(cuid())
+  experimentId          String     @unique
+  protocolVersion       String
+  hypothesis            String
+  primaryMetric         String
+  revenueDefinition     String
+  minimumMeaningfulLift Float
+  alpha                 Float
+  power                 Float
+  targetSampleSize      Int
+  minimumDurationDays   Int
+  maximumDurationDays   Int
+  randomizationUnit     String
+  eligibilityJson       String
+  exclusionsJson        String
+  covariatesJson        String
+  stoppingRule          String
+  analysisVersion       String
+  contentVersionsJson   String
+  mappingVersionsJson   String
+  guardrailsJson        String
+  dataMaturityLagDays   Int        @default(7)
+  registrationHash      String     @unique
+  registeredAt          DateTime   @default(now())
+  experiment            Experiment @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+}
+
+model ExperimentResultSnapshot {
+  id              String     @id @default(cuid())
+  experimentId    String
+  analysisVersion String
+  resultState     String
+  dataMaturityAt  DateTime
+  dataHash        String
+  payloadJson     String
+  reportMarkdown  String
+  createdAt       DateTime   @default(now())
+  experiment      Experiment @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+
+  @@unique([experimentId, dataHash])
+  @@index([experimentId, createdAt])
+}
+
+model Assignment {
+  id                    String             @id @default(cuid())
+  merchantId            String
+  experimentId          String
+  randomizationUnitId   String
+  randomizationUnitType String
+  arm                   String
+  bucket                Int
+  saltVersion           Int
+  consentState          String
+  assignedAt            DateTime           @default(now())
+  expiresAt             DateTime
+  merchant              Merchant           @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  experiment            Experiment         @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+  decisions             Decision[]
+  orderAttributions     OrderAttribution[]
+  visitorHash           String?
+  eligibilityVersion    String             @default("legacy-v1")
+  consentPolicyVersion  String             @default("legacy-v1")
+  visitorOutcome        VisitorOutcome?
+  attributionsV2        AttributionV2[]
+
+  @@unique([experimentId, randomizationUnitId])
+  @@unique([experimentId, visitorHash])
+  @@index([merchantId, assignedAt])
+}
+
+model Decision {
+  id                  String             @id
+  merchantId          String
+  experimentId        String?
+  assignmentId        String?
+  productId           String
+  experienceVersionId String?
+  sessionId           String
+  visitorId           String?
+  arm                 String
+  policy              String
+  acquisitionAngle    String?
+  mappingVersion      Int?
+  bucket              Int?
+  reason              String
+  consentState        String
+  occurredAt          DateTime
+  receivedAt          DateTime           @default(now())
+  requestHash         String?
+  deploymentVersionId String?
+  deploymentRevision  Int?
+  merchant            Merchant           @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  experiment          Experiment?        @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+  assignment          Assignment?        @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  product             Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  experienceVersion   ExperienceVersion? @relation(fields: [experienceVersionId], references: [id], onDelete: Restrict)
+  renderEvents        RenderEvent[]
+  commerceEvents      CommerceEvent[]
+  orderAttributions   OrderAttribution[]
+  deploymentVersion   DeploymentVersion? @relation(fields: [deploymentVersionId], references: [id], onDelete: Restrict)
+
+  @@index([merchantId, occurredAt])
+  @@index([experimentId, arm])
+  @@index([deploymentVersionId, occurredAt])
+}
+
+model RenderEvent {
+  id         String   @id @default(cuid())
+  merchantId String
+  eventId    String
+  decisionId String
+  status     String
+  errorCode  String?
+  occurredAt DateTime
+  receivedAt DateTime @default(now())
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  decision   Decision @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+
+  @@unique([merchantId, eventId])
+  @@index([decisionId, occurredAt])
+}
+
+model CommerceEvent {
+  id             String    @id @default(cuid())
+  merchantId     String
+  eventId        String
+  source         String
+  eventType      String
+  occurredAt     DateTime
+  receivedAt     DateTime  @default(now())
+  clientId       String?
+  visitorId      String?
+  sessionId      String?
+  decisionId     String?
+  experimentKey  String?
+  productId      String?
+  checkoutToken  String?
+  shopifyOrderId String?
+  consentState   String
+  payloadJson    String    @default("{}")
+  merchant       Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  decision       Decision? @relation(fields: [decisionId], references: [id], onDelete: SetNull)
+
+  @@unique([merchantId, eventId])
+  @@index([merchantId, eventType, occurredAt])
+  @@index([merchantId, shopifyOrderId])
+}
+
+model StoreOrder {
+  id              String            @id @default(cuid())
+  merchantId      String
+  shopifyOrderId  String
+  orderNumber     String?
+  currencyCode    String
+  grossAmount     Decimal
+  netAmount       Decimal
+  financialStatus String?
+  cancelledAt     DateTime?
+  occurredAt      DateTime
+  payloadJson     String            @default("{}")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  merchant        Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  attribution     OrderAttribution?
+  refunds         StoreRefund[]
+
+  @@unique([merchantId, shopifyOrderId])
+  @@index([merchantId, occurredAt])
+}
+
+model StoreRefund {
+  id              String     @id @default(cuid())
+  merchantId      String
+  orderId         String
+  shopifyRefundId String
+  amount          Decimal
+  currencyCode    String
+  occurredAt      DateTime
+  payloadJson     String     @default("{}")
+  createdAt       DateTime   @default(now())
+  merchant        Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  order           StoreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, shopifyRefundId])
+  @@index([orderId, occurredAt])
+}
+
+model OrderAttribution {
+  id           String     @id @default(cuid())
+  merchantId   String
+  orderId      String     @unique
+  experimentId String
+  assignmentId String
+  decisionId   String
+  joinMethod   String
+  joinedAt     DateTime   @default(now())
+  merchant     Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  order        StoreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  decision     Decision   @relation(fields: [decisionId], references: [id], onDelete: Restrict)
+
+  @@index([merchantId, joinedAt])
+}
+
+model MeasurementSyncState {
+  id                  String    @id @default(cuid())
+  merchantId          String    @unique
+  status              String    @default("IDLE")
+  lastOrderSyncAt     DateTime?
+  lastSuccessfulAt    DateTime?
+  lastCursor          String?
+  recoveredOrderCount Int       @default(0)
+  lastError           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  merchant            Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model RuntimeControl {
+  id          String    @id @default(cuid())
+  merchantId  String    @unique
+  killSwitch  Boolean   @default(false)
+  reason      String?
+  activatedBy String?
+  activatedAt DateTime?
+  clearedBy   String?
+  clearedAt   DateTime?
+  updatedAt   DateTime  @updatedAt
+  merchant    Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model Incident {
+  id           String      @id @default(cuid())
+  merchantId   String
+  experimentId String?
+  severity     String
+  category     String
+  status       String      @default("OPEN")
+  summary      String
+  detailsJson  String      @default("{}")
+  detectedAt   DateTime    @default(now())
+  resolvedAt   DateTime?
+  actor        String
+  merchant     Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  experiment   Experiment? @relation(fields: [experimentId], references: [id], onDelete: SetNull)
+
+  @@index([merchantId, status, detectedAt])
+  @@index([experimentId, detectedAt])
+}
+
+model Confounder {
+  id           String     @id @default(cuid())
+  merchantId   String
+  experimentId String
+  eventType    String
+  materiality  String
+  summary      String
+  occurredAt   DateTime
+  recordedAt   DateTime   @default(now())
+  recordedBy   String
+  merchant     Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+
+  @@index([experimentId, occurredAt])
+}
+
+model SafetyEvaluation {
+  id                String     @id @default(cuid())
+  merchantId        String
+  experimentId      String
+  outcome           String
+  rollbackTriggered Boolean    @default(false)
+  metricsJson       String
+  reasonsJson       String
+  evaluatedAt       DateTime   @default(now())
+  merchant          Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  experiment        Experiment @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+
+  @@index([experimentId, evaluatedAt])
+}
+
+// Stable public-store digest serializes privacy replay across key versions and uninstall.
+model PrivacyIntakeLock {
+  id        String   @id
+  updatedAt DateTime @updatedAt
+}
+
+model PrivacyRequest {
+  id              String    @id @default(cuid())
+  shopHash        String
+  requestType     String
+  subjectHash     String?
+  status          String
+  detailsJson     String    @default("{}")
+  requestedAt     DateTime  @default(now())
+  completedAt     DateTime?
+  idempotencyKey  String?   @unique
+  scopeCiphertext String?
+  dueAt           DateTime?
+  nextRunAt       DateTime?
+  attempts        Int       @default(0)
+  leaseToken      String?
+  leaseUntil      DateTime?
+  lastErrorCode   String?
+
+  lookupKeyId String?
+  scopeKeyId  String?
+
+  artifactChunks PrivacyArtifactChunk[]
+  deliveryAudits PrivacyDeliveryAudit[]
+
+  @@index([shopHash, requestedAt])
+  @@index([status, nextRunAt])
+  @@index([lookupKeyId])
+  @@index([scopeKeyId])
+}
+
+// Append-only owner delivery attestation that survives merchant uninstall.
+// Shop/user identities are keyed digests; the request storage key authenticates it.
+model PrivacyDeliveryAudit {
+  id                String         @id @default(cuid())
+  requestId         String
+  shopHash          String
+  actorHash         String
+  evidenceReference String
+  partCount         Int
+  deliveredAt       DateTime
+  integrityTag      String
+  request           PrivacyRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId])
+  @@index([deliveredAt])
+}
+
+// Authenticated encrypted data-copy chunks, never exposed by request summaries.
+// No merchant FK: uninstall must not destroy an undelivered privacy request.
+model PrivacyArtifactChunk {
+  id                String         @id @default(cuid())
+  requestId         String
+  kind              String
+  ordinal           Int
+  payloadCiphertext String
+  ciphertextHash    String
+  createdAt         DateTime       @default(now())
+  expiresAt         DateTime
+  request           PrivacyRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, kind, ordinal])
+  @@index([expiresAt, id])
+}
+
+// Contains keyed lookup digests only; intentionally survives merchant deletion.
+// Storage for replay suppression; intake alone does not activate erasure/guards.
+model PrivacyOrderSuppression {
+  id          String   @id @default(cuid())
+  shopHash    String
+  orderHash   String
+  requestId   String
+  createdAt   DateTime @default(now())
+  lookupKeyId String?
+
+  @@unique([shopHash, orderHash])
+  @@index([requestId])
+  @@index([lookupKeyId])
+}
+
+// Keyed replay tombstones only; intentionally independent of merchant lifetime.
+model PrivacyIdentitySuppression {
+  id           String   @id @default(cuid())
+  shopHash     String
+  kind         String
+  identityHash String
+  requestId    String
+  lookupKeyId  String
+  createdAt    DateTime @default(now())
+
+  @@unique([shopHash, kind, identityHash])
+  @@index([requestId])
+  @@index([lookupKeyId])
+}
+
+model PilotSettings {
+  id                     String   @id @default(cuid())
+  merchantId             String   @unique
+  unknownTrafficPolicy   String   @default("ORIGINAL")
+  rawEventRetentionDays  Int      @default(90)
+  aggregateRetentionDays Int      @default(730)
+  incidentContactJson    String   @default("{}")
+  vertical               String?
+  reviewProvider         String?
+  updatedBy              String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  merchant               Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model ProductQualification {
+  id                     String    @id @default(cuid())
+  merchantId             String
+  productId              String    @unique
+  windowStart            DateTime
+  windowEnd              DateTime
+  eligibleSessions       Int
+  orders                 Int
+  revenueAmount          Decimal
+  currencyCode           String
+  eventCoverage          Float
+  weeklyEligibleSessions Float
+  targetSampleSize       Int
+  expectedDurationDays   Float
+  status                 String
+  assumptionsJson        String    @default("{}")
+  overrideReason         String?
+  overriddenBy           String?
+  overriddenAt           DateTime?
+  evaluatedAt            DateTime  @default(now())
+  merchant               Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product                Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, status])
+}
+
+model ThemeActivation {
+  id                          String    @id @default(cuid())
+  merchantId                  String
+  productId                   String    @unique
+  themeId                     String?
+  blockHandle                 String    @default("adaptive-panel")
+  extensionStatus             String    @default("UNKNOWN")
+  activationTarget            String?
+  activeOnPublishedTheme      Boolean   @default(false)
+  detectedAt                  DateTime?
+  placementApproved           Boolean   @default(false)
+  mobileApproved              Boolean   @default(false)
+  desktopApproved             Boolean   @default(false)
+  standardCheckoutApproved    Boolean   @default(false)
+  acceleratedCheckoutApproved Boolean   @default(false)
+  shopPayApproved             Boolean   @default(false)
+  consentFlowsApproved        Boolean   @default(false)
+  fallbackApproved            Boolean   @default(false)
+  performanceApproved         Boolean   @default(false)
+  verifiedBy                  String?
+  verifiedAt                  DateTime?
+  merchant                    Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product                     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, activeOnPublishedTheme])
+}
+
+model PilotQaCheck {
+  id         String    @id @default(cuid())
+  merchantId String
+  productId  String
+  key        String
+  status     String    @default("PENDING")
+  evidence   String?
+  checkedBy  String?
+  checkedAt  DateTime?
+  merchant   Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, key])
+  @@index([merchantId, status])
+}
+
+model PilotRole {
+  id         String   @id @default(cuid())
+  merchantId String
+  actorKey   String
+  role       String
+  active     Boolean  @default(true)
+  grantedBy  String
+  grantedAt  DateTime @default(now())
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, actorKey])
+  @@index([merchantId, role, active])
+}
+
+model OperationalAlert {
+  id           String    @id @default(cuid())
+  merchantId   String
+  experimentId String?
+  fingerprint  String
+  severity     String
+  kind         String
+  status       String    @default("OPEN")
+  summary      String
+  detailsJson  String    @default("{}")
+  openedAt     DateTime  @default(now())
+  resolvedAt   DateTime?
+  merchant     Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, fingerprint])
+  @@index([merchantId, status, openedAt])
+}
+
+model AutomationRun {
+  id          String    @id @default(cuid())
+  merchantId  String?
+  jobType     String
+  status      String
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  detailsJson String    @default("{}")
+  error       String?
+  merchant    Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([jobType, startedAt])
+  @@index([merchantId, startedAt])
+}
+
+model ProductCandidateScore {
+  id                    String          @id @default(cuid())
+  merchantId            String
+  productId             String
+  scoringVersion        String
+  lookbackStart         DateTime?
+  lookbackEnd           DateTime?
+  inputAvailabilityJson String
+  componentScoresJson   String
+  exclusionsJson        String          @default("[]")
+  explanationJson       String          @default("[]")
+  totalScore            Float
+  qualificationBand     String
+  durationBand          String
+  createdAt             DateTime        @default(now())
+  merchant              Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product               Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  plans                 AutopilotPlan[]
+
+  @@index([merchantId, createdAt])
+  @@index([merchantId, qualificationBand, totalScore])
+  @@index([productId, createdAt])
+}
+
+model AutopilotPlan {
+  id                           String                @id @default(cuid())
+  merchantId                   String
+  productId                    String
+  candidateScoreId             String
+  version                      Int
+  state                        String                @default("PREPARING")
+  planHash                     String                @unique
+  candidateScoreSnapshotJson   String
+  contentVersionIdsJson        String
+  contentHashesJson            String
+  evidenceSnapshotHash         String
+  mappingVersionsJson          String                @default("[]")
+  unknownTrafficPolicy         String                @default("ORIGINAL")
+  aaProtocolJson               String
+  realExperimentProtocolJson   String
+  safetyPolicyVersion          String
+  orchestrationProtocolVersion String                @default("autopilot-plan-v1")
+  cutoverReceiptId             String?
+  authorizedTransitionsJson    String
+  approvalRecordJson           String?
+  approvedBy                   String?
+  approvedAt                   DateTime?
+  mediumRiskAcknowledgedAt     DateTime?
+  aaExperimentId               String?
+  realExperimentId             String?
+  resultSnapshotId             String?
+  lockToken                    String?
+  lockExpiresAt                DateTime?
+  expiresAt                    DateTime
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
+  merchant                     Merchant              @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product                      Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  candidateScore               ProductCandidateScore @relation(fields: [candidateScoreId], references: [id], onDelete: Restrict)
+  transitions                  AutopilotTransition[]
+  notices                      MerchantNotice[]
+  deploymentVersions           DeploymentVersion[]
+
+  @@unique([merchantId, productId, version])
+  @@index([merchantId, state, updatedAt])
+  @@index([orchestrationProtocolVersion])
+  @@index([cutoverReceiptId])
+  @@index([aaExperimentId])
+  @@index([realExperimentId])
+}
+
+model AutopilotTransition {
+  id               String        @id @default(cuid())
+  merchantId       String
+  planId           String
+  fromState        String
+  toState          String
+  actorType        String
+  actorId          String
+  reasonCode       String
+  gateSnapshotHash String
+  idempotencyKey   String        @unique
+  occurredAt       DateTime      @default(now())
+  merchant         Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  plan             AutopilotPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId, occurredAt])
+  @@index([merchantId, occurredAt])
+}
+
+model MerchantNotice {
+  id           String         @id @default(cuid())
+  merchantId   String
+  planId       String?
+  dedupeKey    String
+  kind         String
+  status       String         @default("OPEN")
+  title        String
+  detail       String
+  actionLabel  String?
+  actionHref   String?
+  metadataJson String         @default("{}")
+  createdAt    DateTime       @default(now())
+  resolvedAt   DateTime?
+  merchant     Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  plan         AutopilotPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, dedupeKey])
+  @@index([merchantId, status, createdAt])
+  @@index([planId, status])
+}
+
+// Additive MVP-v2 models. Legacy experiments and reports remain in their
+// original tables so new protocol semantics are never applied retroactively.
+model MessageDiagnosis {
+  id               String    @id @default(cuid())
+  merchantId       String?
+  productId        String?
+  productRef       String
+  sourceVersion    String
+  adEvidenceRef    String?
+  mode             String
+  gapType          String
+  rationale        String
+  sourceSpansJson  String
+  status           String    @default("DRAFT")
+  rulesVersion     String
+  publicLookupHash String?   @unique
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  merchant         Merchant? @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product          Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, productId, createdAt])
+  @@index([expiresAt])
+}
+
+model QualificationSnapshot {
+  id               String   @id @default(cuid())
+  merchantId       String
+  productId        String
+  observationStart DateTime
+  observationEnd   DateTime
+  dataSource       String
+  eligibleVisitors Int
+  eligibleSessions Int
+  paidPurchasers   Int
+  revenueMeanMinor String
+  revenueVariance  Float
+  currencyCode     String
+  coverage         Float
+  targetEffect     Float
+  targetVisitors   Int?
+  forecastLowDays  Int?
+  forecastHighDays Int?
+  status           String
+  version          String
+  canonicalPayload String
+  snapshotHash     String   @unique
+  createdAt        DateTime @default(now())
+  merchant         Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, productId, createdAt])
+}
+
+model DeploymentVersion {
+  id                    String             @id @default(cuid())
+  merchantId            String
+  productId             String
+  planId                String?
+  revision              Int
+  protocolVersion       String
+  policy                String
+  contentSetHash        String
+  experimentId          String?
+  state                 String             @default("DRAFT")
+  approvedAuthorityHash String
+  canonicalPayload      String
+  createdAt             DateTime           @default(now())
+  merchant              Merchant           @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product               Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
+  plan                  AutopilotPlan?     @relation(fields: [planId], references: [id], onDelete: Restrict)
+  experiment            Experiment?        @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+  activePointers        ActiveDeployment[]
+  decisions             Decision[]
+
+  @@unique([merchantId, productId, revision])
+  @@index([merchantId, state, createdAt])
+  @@index([experimentId])
+}
+
+model ActiveDeployment {
+  id                  String            @id @default(cuid())
+  merchantId          String
+  productId           String            @unique
+  deploymentVersionId String
+  revision            Int               @default(1)
+  updatedAt           DateTime          @updatedAt
+  merchant            Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  product             Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  deploymentVersion   DeploymentVersion @relation(fields: [deploymentVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([merchantId, productId])
+  @@index([merchantId, updatedAt])
+}
+
+model VisitorOutcome {
+  id                   String     @id @default(cuid())
+  merchantId           String
+  experimentId         String
+  assignmentId         String     @unique
+  eligibleSessionCount Int        @default(0)
+  netFocalRevenueMinor String     @default("0")
+  paidOrders           Int        @default(0)
+  sourceWatermark      String?
+  projectionVersion    String
+  updatedAt            DateTime   @updatedAt
+  merchant             Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  experiment           Experiment @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+  assignment           Assignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+
+  @@index([merchantId, experimentId])
+}
+
+model WebhookInbox {
+  id                   String    @id @default(cuid())
+  merchantId           String
+  shopifyEventId       String
+  topic                String
+  sourceOccurredAt     DateTime?
+  receivedAt           DateTime  @default(now())
+  payloadSchemaVersion Int
+  payloadJson          String
+  processingState      String    @default("PENDING")
+  attempts             Int       @default(0)
+  nextAttemptAt        DateTime  @default(now())
+  processingLeaseToken String?
+  processingLeaseUntil DateTime?
+  lastErrorCode        String?
+  processedAt          DateTime?
+  merchant             Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, shopifyEventId])
+  @@index([processingState, nextAttemptAt])
+  @@index([processingState, processingLeaseUntil])
+  @@index([merchantId, topic, receivedAt])
+}
+
+model OrderLedger {
+  id                      String            @id @default(cuid())
+  merchantId              String
+  shopifyOrderId          String
+  shopifyCreatedAt        DateTime
+  sourceUpdatedAt         DateTime
+  shopCurrency            String
+  originalObligationMinor String
+  paymentState            String
+  test                    Boolean           @default(false)
+  cancelledAt             DateTime?
+  reconciliationState     String            @default("PENDING")
+  sourceWatermark         String?
+  sourceHash              String
+  completenessJson        String
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  merchant                Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  lines                   OrderLedgerLine[]
+  refunds                 RefundLedger[]
+
+  @@unique([merchantId, shopifyOrderId])
+  @@index([merchantId, sourceUpdatedAt])
+  @@index([merchantId, reconciliationState, updatedAt])
+}
+
+model OrderLedgerLine {
+  id                            String          @id @default(cuid())
+  orderId                       String
+  shopifyLineItemId             String
+  shopifyProductId              String?
+  shopifyVariantId              String?
+  merchandiseAfterDiscountMinor String?
+  currencyCode                  String
+  giftCardProduct               Boolean         @default(false)
+  allocationState               String          @default("RESOLVED")
+  order                         OrderLedger     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  attributions                  AttributionV2[]
+
+  @@unique([orderId, shopifyLineItemId])
+  @@index([shopifyProductId])
+}
+
+model RefundLedger {
+  id                   String       @id @default(cuid())
+  merchantId           String
+  orderId              String?
+  shopifyOrderId       String
+  shopifyRefundId      String
+  shopifyTransactionId String?
+  shopifyLineItemId    String?
+  sourceKey            String
+  amountMinor          String
+  currencyCode         String
+  sourceOccurredAt     DateTime
+  allocationState      String       @default("PENDING")
+  createdAt            DateTime     @default(now())
+  merchant             Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  order                OrderLedger? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@unique([merchantId, shopifyRefundId, shopifyTransactionId, shopifyLineItemId])
+  @@unique([merchantId, sourceKey])
+  @@index([merchantId, shopifyOrderId, sourceOccurredAt])
+  @@index([allocationState, createdAt])
+}
+
+model AttributionV2 {
+  id            String          @id @default(cuid())
+  merchantId    String
+  orderLineId   String
+  assignmentId  String
+  experimentId  String
+  joinMethod    String
+  signedRefHash String?
+  validAt       DateTime
+  reason        String
+  status        String
+  correctedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  merchant      Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  orderLine     OrderLedgerLine @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
+  assignment    Assignment      @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  experiment    Experiment      @relation(fields: [experimentId], references: [id], onDelete: Restrict)
+
+  @@unique([orderLineId, experimentId])
+  @@index([merchantId, experimentId, status])
+}
+
+model QaEvidence {
+  id                  String    @id @default(cuid())
+  merchantId          String
+  productId           String
+  themeId             String?
+  templateSuffix      String?
+  deploymentVersionId String?
+  checkKey            String
+  status              String
+  applicability       String
+  capturedAt          DateTime  @default(now())
+  verifiedBy          String
+  evidenceRef         String
+  expiresAt           DateTime?
+  merchant            Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId, productId, checkKey, capturedAt])
+  @@index([expiresAt])
+}
+
+model Job {
+  id                   String    @id @default(cuid())
+  merchantId           String
+  type                 String
+  idempotencyKey       String
+  inputHash            String
+  payloadSchemaVersion Int
+  payloadJson          String
+  status               String    @default("PENDING")
+  attempts             Int       @default(0)
+  nextRunAt            DateTime  @default(now())
+  leaseToken           String?
+  leaseUntil           DateTime?
+  resultRef            String?
+  lastErrorCode        String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  merchant             Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, idempotencyKey])
+  @@index([status, nextRunAt, leaseUntil])
+  @@index([merchantId, type, createdAt])
+}
+
+model OutboxEvent {
+  id                   String    @id @default(cuid())
+  merchantId           String
+  type                 String
+  aggregateType        String
+  aggregateId          String
+  idempotencyKey       String
+  inputHash            String
+  payloadSchemaVersion Int
+  payloadJson          String
+  status               String    @default("PENDING")
+  attempts             Int       @default(0)
+  nextRunAt            DateTime  @default(now())
+  leaseToken           String?
+  leaseUntil           DateTime?
+  deliveredAt          DateTime?
+  lastErrorCode        String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  merchant             Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, idempotencyKey])
+  @@index([status, nextRunAt, leaseUntil])
+  @@index([merchantId, aggregateType, aggregateId])
+}
+
+model SubscriptionState {
+  id                           String    @id @default(cuid())
+  merchantId                   String    @unique
+  externalSubscriptionIdentity String?
+  offerVersion                 String
+  authoritativeStatus          String    @default("FREE_EVALUATION")
+  rawSourceVersion             String?
+  providerShop                 String?
+  providerState                String?
+  providerUpdatedAt            DateTime?
+  providerPayloadHash          String?
+  verifiedAt                   DateTime?
+  periodEnd                    DateTime?
+  cancellationAt               DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+  merchant                     Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+}
+
+model ActionReceipt {
+  id             String   @id @default(cuid())
+  merchantId     String
+  actor          String
+  action         String
+  idempotencyKey String
+  inputHash      String
+  responseRef    String
+  createdAt      DateTime @default(now())
+  merchant       Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, idempotencyKey])
+  @@index([merchantId, action, createdAt])
+}
+
+model EvaluationConsumption {
+  id                     String   @id @default(cuid())
+  merchantId             String
+  allowanceKey           String
+  experimentId           String
+  offerVersion           String
+  sourceResultSnapshotId String?
+  inputHash              String
+  consumedAt             DateTime @default(now())
+  merchant               Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, allowanceKey])
+  @@unique([merchantId, experimentId])
+  @@index([merchantId, consumedAt])
+}
+
+// Recovery metadata is tenant-independent and must survive merchant erasure.
+// The singleton hold is present in every migrated database; only HELD rows
+// block startup/transfer. Recovery fingerprints exclude these metadata tables.
+model RecoveryHold {
+  id                   String                   @id @default("1")
+  state                String                   @default("HELD")
+  reason               String                   @default("NONE")
+  sourceManifestSha256 String?
+  sourceArtifact       String?
+  sourceArtifactSha256 String?
+  restoredDbSha256     String?
+  schemaSha256         String?
+  replayEvidenceId     String?
+  integrityTag         String                   @default("")
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @default(now()) @updatedAt
+  evidence             RecoveryReplayEvidence[]
+  releaseAudits        RecoveryReleaseAudit[]
+
+  @@map("_PagneticRecoveryHold")
+}
+
+model RecoveryReplayEvidence {
+  id                       String                @id @default(cuid())
+  holdId                   String
+  evidenceVersion          Int                   @default(1)
+  sourceManifestSha256     String
+  sourceArtifact           String
+  sourceArtifactSha256     String
+  restoredDbSha256         String
+  schemaSha256             String
+  receiptInventoryDigest   String
+  receiptInventoryStarted  DateTime
+  receiptInventoryFinished DateTime
+  retainedKeyFingerprints  String
+  replayStartedAt          DateTime
+  replayFinishedAt         DateTime
+  receiptCount             Int
+  unresolvedCount          Int
+  erasureDigest            String
+  postReplayDbSha256       String
+  generatedAt              DateTime
+  integrityTag             String
+  hold                     RecoveryHold          @relation(fields: [holdId], references: [id], onDelete: Restrict)
+  releaseAudit             RecoveryReleaseAudit?
+
+  @@index([sourceManifestSha256, generatedAt])
+}
+
+model RecoveryReleaseAudit {
+  id                         String                 @id @default(cuid())
+  holdId                     String
+  evidenceId                 String
+  sourceManifestSha256       String
+  sourceArtifactSha256       String
+  restoredDbSha256           String
+  schemaSha256               String
+  receiptInventoryDigest     String
+  evidenceHash               String
+  operatorIdentity           String
+  privacyReviewReference     String
+  backupReviewReference      String
+  legacyInventoryReference   String
+  receiptQuiescenceReference String
+  releasedAt                 DateTime
+  integrityTag               String
+  hold                       RecoveryHold           @relation(fields: [holdId], references: [id], onDelete: Restrict)
+  evidence                   RecoveryReplayEvidence @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
+
+  @@unique([evidenceId])
+  @@index([sourceManifestSha256, releasedAt])
+}

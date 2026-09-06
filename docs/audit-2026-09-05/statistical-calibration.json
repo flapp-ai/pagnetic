@@ -1,0 +1,678 @@
+{
+  "generatedAt": "2026-09-05T10:51:32.773323+00:00",
+  "scope": "synthetic development calibration; not store validation or launch approval",
+  "reference": {
+    "scipy": "1.17.1",
+    "numpy": "2.4.2",
+    "method": "ttest_ind_from_stats(equal_var=False), full-vector cross-checks, t.ppf"
+  },
+  "experimentsPerRegime": 2000,
+  "seed": 20260905,
+  "regimes": [
+    {
+      "conversion": 0.01,
+      "lognormalSigma": 0.5,
+      "repeatedPurchaseSessions": false,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 104,
+        "rate": 0.052,
+        "exact95Interval": [
+          0.04268243979733738,
+          0.062656767933695
+        ]
+      },
+      "coverage": {
+        "count": 1896,
+        "rate": 0.948,
+        "exact95Interval": [
+          0.9373432320663051,
+          0.9573175602026627
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 58,
+        "rate": 0.029,
+        "exact95Interval": [
+          0.022092952440650297,
+          0.03732942847212296
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 7.750600161671173e-11,
+      "maxDfRelativeError": 1.0353213646298461e-13,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.01,
+      "lognormalSigma": 0.5,
+      "repeatedPurchaseSessions": true,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 89,
+        "rate": 0.0445,
+        "exact95Interval": [
+          0.03588694450501813,
+          0.0544780113574833
+        ]
+      },
+      "coverage": {
+        "count": 1911,
+        "rate": 0.9555,
+        "exact95Interval": [
+          0.9455219886425167,
+          0.9641130554949818
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 38,
+        "rate": 0.019,
+        "exact95Interval": [
+          0.013479737835558649,
+          0.02598647563800926
+        ]
+      },
+      "insufficient": 1,
+      "maxIntervalErrorMinor": 1.6612489162071142e-10,
+      "maxDfRelativeError": 9.735574295013031e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.01,
+      "lognormalSigma": 1.5,
+      "repeatedPurchaseSessions": false,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 67,
+        "rate": 0.0335,
+        "exact95Interval": [
+          0.026054421067532075,
+          0.04235044623308401
+        ]
+      },
+      "coverage": {
+        "count": 1933,
+        "rate": 0.9665,
+        "exact95Interval": [
+          0.957649553766916,
+          0.9739455789324679
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 33,
+        "rate": 0.0165,
+        "exact95Interval": [
+          0.011384358380189745,
+          0.023094698323837697
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 2.3931079340400174e-10,
+      "maxDfRelativeError": 1.0129930051341713e-13,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.01,
+      "lognormalSigma": 1.5,
+      "repeatedPurchaseSessions": true,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 46,
+        "rate": 0.023,
+        "exact95Interval": [
+          0.016886932426977797,
+          0.030560637865360632
+        ]
+      },
+      "coverage": {
+        "count": 1954,
+        "rate": 0.977,
+        "exact95Interval": [
+          0.9694393621346393,
+          0.9831130675730222
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 23,
+        "rate": 0.0115,
+        "exact95Interval": [
+          0.007303594042173941,
+          0.01720594810633327
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 2.595697878859937e-09,
+      "maxDfRelativeError": 9.214991583314806e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.03,
+      "lognormalSigma": 0.5,
+      "repeatedPurchaseSessions": false,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 97,
+        "rate": 0.0485,
+        "exact95Interval": [
+          0.039503408629221984,
+          0.05884770515929626
+        ]
+      },
+      "coverage": {
+        "count": 1903,
+        "rate": 0.9515,
+        "exact95Interval": [
+          0.9411522948407037,
+          0.960496591370778
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 53,
+        "rate": 0.0265,
+        "exact95Interval": [
+          0.019911905907975806,
+          0.03452066078759858
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 1.6609646991128102e-10,
+      "maxDfRelativeError": 8.950018906977276e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.03,
+      "lognormalSigma": 0.5,
+      "repeatedPurchaseSessions": true,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 105,
+        "rate": 0.0525,
+        "exact95Interval": [
+          0.04313761808461887,
+          0.06319990248328702
+        ]
+      },
+      "coverage": {
+        "count": 1895,
+        "rate": 0.9475,
+        "exact95Interval": [
+          0.9368000975167129,
+          0.9568623819153811
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 62,
+        "rate": 0.031,
+        "exact95Interval": [
+          0.023848362473131622,
+          0.039566119858672394
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 2.085585038003046e-10,
+      "maxDfRelativeError": 8.067349994203015e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.03,
+      "lognormalSigma": 1.5,
+      "repeatedPurchaseSessions": false,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 68,
+        "rate": 0.034,
+        "exact95Interval": [
+          0.026497089656563527,
+          0.042905884883076235
+        ]
+      },
+      "coverage": {
+        "count": 1932,
+        "rate": 0.966,
+        "exact95Interval": [
+          0.9570941151169238,
+          0.9735029103434365
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 37,
+        "rate": 0.0185,
+        "exact95Interval": [
+          0.013058315418338576,
+          0.025410378996541763
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 5.466063157655299e-10,
+      "maxDfRelativeError": 1.0161381460260497e-13,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.03,
+      "lognormalSigma": 1.5,
+      "repeatedPurchaseSessions": true,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 85,
+        "rate": 0.0425,
+        "exact95Interval": [
+          0.03408607459315087,
+          0.05228591324237597
+        ]
+      },
+      "coverage": {
+        "count": 1915,
+        "rate": 0.9575,
+        "exact95Interval": [
+          0.947714086757624,
+          0.9659139254068492
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 40,
+        "rate": 0.02,
+        "exact95Interval": [
+          0.0143257869136199,
+          0.027135577268658336
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 1.4297256711870432e-09,
+      "maxDfRelativeError": 9.851356296672497e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.1,
+      "lognormalSigma": 0.5,
+      "repeatedPurchaseSessions": false,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 86,
+        "rate": 0.043,
+        "exact95Interval": [
+          0.034535804359716156,
+          0.05283441782903536
+        ]
+      },
+      "coverage": {
+        "count": 1914,
+        "rate": 0.957,
+        "exact95Interval": [
+          0.9471655821709647,
+          0.9654641956402839
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 34,
+        "rate": 0.017,
+        "exact95Interval": [
+          0.011800987897836202,
+          0.023675406227344105
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 2.1515234038815834e-10,
+      "maxDfRelativeError": 3.8459506161209306e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.1,
+      "lognormalSigma": 0.5,
+      "repeatedPurchaseSessions": true,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 84,
+        "rate": 0.042,
+        "exact95Interval": [
+          0.03363667911309387,
+          0.05173707971868108
+        ]
+      },
+      "coverage": {
+        "count": 1916,
+        "rate": 0.958,
+        "exact95Interval": [
+          0.948262920281319,
+          0.9663633208869061
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 43,
+        "rate": 0.0215,
+        "exact95Interval": [
+          0.015602297625726739,
+          0.028852041684886406
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 4.6424020183621906e-10,
+      "maxDfRelativeError": 5.0188030772899024e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.1,
+      "lognormalSigma": 1.5,
+      "repeatedPurchaseSessions": false,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 74,
+        "rate": 0.037,
+        "exact95Interval": [
+          0.029162462412178555,
+          0.04622933880149302
+        ]
+      },
+      "coverage": {
+        "count": 1926,
+        "rate": 0.963,
+        "exact95Interval": [
+          0.953770661198507,
+          0.9708375375878214
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 42,
+        "rate": 0.021,
+        "exact95Interval": [
+          0.015175849561202312,
+          0.028280800750618396
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 1.899024937301874e-09,
+      "maxDfRelativeError": 9.709830923574724e-14,
+      "referencePassed": true,
+      "calibrationPassed": true
+    },
+    {
+      "conversion": 0.1,
+      "lognormalSigma": 1.5,
+      "repeatedPurchaseSessions": true,
+      "visitorsPerArm": 2000,
+      "twoSidedFalsePositive": {
+        "count": 86,
+        "rate": 0.043,
+        "exact95Interval": [
+          0.034535804359716156,
+          0.05283441782903536
+        ]
+      },
+      "coverage": {
+        "count": 1914,
+        "rate": 0.957,
+        "exact95Interval": [
+          0.9471655821709647,
+          0.9654641956402839
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 45,
+        "rate": 0.0225,
+        "exact95Interval": [
+          0.016457868212595237,
+          0.029991932577308564
+        ]
+      },
+      "insufficient": 0,
+      "maxIntervalErrorMinor": 1.7698766896501184e-09,
+      "maxDfRelativeError": 1.0321004481198112e-13,
+      "referencePassed": true,
+      "calibrationPassed": true
+    }
+  ],
+  "powerRegimes": [
+    {
+      "conversion": 0.01,
+      "sigma": 0.5,
+      "visitorsPerArm": 76923,
+      "baselineSize": 10000,
+      "relativeEffect": 0.2,
+      "productionSimulatedPower": 0.8865,
+      "productionPowerLowerBound": 0.8679534825209513,
+      "independentFixedVisitorPower": {
+        "count": 1774,
+        "rate": 0.887,
+        "exact95Interval": [
+          0.8723041145813053,
+          0.9005501112205648
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 1010,
+        "rate": 0.505,
+        "exact95Interval": [
+          0.48284430918422777,
+          0.5271410121070296
+        ]
+      },
+      "negativeEffectDetection": {
+        "count": 1947,
+        "rate": 0.9735,
+        "exact95Interval": [
+          0.9654793392124014,
+          0.9800880940920242
+        ]
+      },
+      "qualificationStatus": "PREVIEW_ONLY",
+      "qualificationReasons": [
+        "VALIDATION_INFORMATION_FLOOR_INFEASIBLE",
+        "MAXIMUM_ENROLLMENT_DURATION_EXCEEDED"
+      ],
+      "passed": true
+    },
+    {
+      "conversion": 0.01,
+      "sigma": 1.5,
+      "visitorsPerArm": 270399,
+      "baselineSize": 10000,
+      "relativeEffect": 0.2,
+      "productionSimulatedPower": 0.897,
+      "productionPowerLowerBound": 0.8791426557128744,
+      "independentFixedVisitorPower": {
+        "count": 1776,
+        "rate": 0.888,
+        "exact95Interval": [
+          0.8733562356901327,
+          0.901494927425778
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 951,
+        "rate": 0.4755,
+        "exact95Interval": [
+          0.4534128071223871,
+          0.4976591197699529
+        ]
+      },
+      "negativeEffectDetection": {
+        "count": 1953,
+        "rate": 0.9765,
+        "exact95Interval": [
+          0.9688714491810146,
+          0.9826831869840871
+        ]
+      },
+      "qualificationStatus": "PREVIEW_ONLY",
+      "qualificationReasons": [
+        "VALIDATION_INFORMATION_FLOOR_INFEASIBLE",
+        "MAXIMUM_ENROLLMENT_DURATION_EXCEEDED"
+      ],
+      "passed": true
+    },
+    {
+      "conversion": 0.03,
+      "sigma": 0.5,
+      "visitorsPerArm": 25504,
+      "baselineSize": 10000,
+      "relativeEffect": 0.2,
+      "productionSimulatedPower": 0.8965,
+      "productionPowerLowerBound": 0.8786086865790861,
+      "independentFixedVisitorPower": {
+        "count": 1765,
+        "rate": 0.8825,
+        "exact95Interval": [
+          0.8675737631091831,
+          0.8962942213103159
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 990,
+        "rate": 0.495,
+        "exact95Interval": [
+          0.47285898789297043,
+          0.5171556908157722
+        ]
+      },
+      "negativeEffectDetection": {
+        "count": 1949,
+        "rate": 0.9745,
+        "exact95Interval": [
+          0.9666072555560716,
+          0.980955989389745
+        ]
+      },
+      "qualificationStatus": "QUALIFIED",
+      "qualificationReasons": [],
+      "passed": true
+    },
+    {
+      "conversion": 0.03,
+      "sigma": 1.5,
+      "visitorsPerArm": 124888,
+      "baselineSize": 10000,
+      "relativeEffect": 0.2,
+      "productionSimulatedPower": 0.882,
+      "productionPowerLowerBound": 0.8631727986534757,
+      "independentFixedVisitorPower": {
+        "count": 1779,
+        "rate": 0.8895,
+        "exact95Interval": [
+          0.8749350699781061,
+          0.9029114953692511
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 994,
+        "rate": 0.497,
+        "exact95Interval": [
+          0.47485535178611316,
+          0.5191534554350334
+        ]
+      },
+      "negativeEffectDetection": {
+        "count": 1948,
+        "rate": 0.974,
+        "exact95Interval": [
+          0.966042965278244,
+          0.9805223827548027
+        ]
+      },
+      "qualificationStatus": "PREVIEW_ONLY",
+      "qualificationReasons": [
+        "MAXIMUM_ENROLLMENT_DURATION_EXCEEDED"
+      ],
+      "passed": true
+    },
+    {
+      "conversion": 0.1,
+      "sigma": 0.5,
+      "visitorsPerArm": 7155,
+      "baselineSize": 10000,
+      "relativeEffect": 0.2,
+      "productionSimulatedPower": 0.8945,
+      "productionPowerLowerBound": 0.8764739994034768,
+      "independentFixedVisitorPower": {
+        "count": 1771,
+        "rate": 0.8855,
+        "exact95Interval": [
+          0.8707265755298578,
+          0.8991322406686578
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 1013,
+        "rate": 0.5065,
+        "exact95Interval": [
+          0.48434286247712044,
+          0.5286380551919353
+        ]
+      },
+      "negativeEffectDetection": {
+        "count": 1946,
+        "rate": 0.973,
+        "exact95Interval": [
+          0.9649163594184622,
+          0.9796531421512604
+        ]
+      },
+      "qualificationStatus": "QUALIFIED",
+      "qualificationReasons": [],
+      "passed": true
+    },
+    {
+      "conversion": 0.1,
+      "sigma": 1.5,
+      "visitorsPerArm": 47790,
+      "baselineSize": 10000,
+      "relativeEffect": 0.2,
+      "productionSimulatedPower": 0.8915,
+      "productionPowerLowerBound": 0.8732754561191857,
+      "independentFixedVisitorPower": {
+        "count": 1799,
+        "rate": 0.8995,
+        "exact95Interval": [
+          0.8854816847683061,
+          0.9123341026024732
+        ]
+      },
+      "positiveProductDecision": {
+        "count": 1023,
+        "rate": 0.5115,
+        "exact95Interval": [
+          0.48933946316989163,
+          0.5336267756932843
+        ]
+      },
+      "negativeEffectDetection": {
+        "count": 1945,
+        "rate": 0.9725,
+        "exact95Interval": [
+          0.9643540087683862,
+          0.9792175448204445
+        ]
+      },
+      "qualificationStatus": "PREVIEW_ONLY",
+      "qualificationReasons": [
+        "MAXIMUM_ENROLLMENT_DURATION_EXCEEDED"
+      ],
+      "passed": true
+    }
+  ],
+  "quantileGrid": {
+    "cases": 45,
+    "maximumAbsoluteError": 5.339919617597388e-10,
+    "tolerance": 1e-06,
+    "passed": true
+  },
+  "sourceHashes": {
+    "app/services/experiment-analysis-v2.ts": "f6f1331defe28dfd8a3803017a55ddf52a1b3e26362b26a8d3311e97c9505950",
+    "app/services/qualification-v2.ts": "16c0711774b73cc18378e2ebbcd47909b35fcb9969f1fd95e1cb11a2be9d5859",
+    "app/services/qualification-health-forecast.ts": "105ab67f32a841b3535fd177268a1bf9dd0b15579551dbb768f07cc011f9ff7a",
+    "app/services/experiment-health-v2.ts": "7dd3fe146b8f6ec35cf559e999e72e9709abb2899bc3a8ef24782ce06a4eedbc",
+    "scripts/lib/statistical-reference-worker.ts": "71b81e61fbaa891181eed50004b36e89de65165f2d2e6c65a527ecdbcf52aedc",
+    "scripts/statistical-reference.py": "b5df999c24e5bd07a9231542e9dea5c51f8bfb15cc7ca790a94615a18caa2929",
+    "scripts/requirements-statistical-reference.txt": "c423ba417c116e6bfaba2c485fe8d8e98285a10cfc6676bab8507178372ec5e9"
+  },
+  "sourceUnchangedDuringRun": true,
+  "passed": true
+}

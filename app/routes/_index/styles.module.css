@@ -1,0 +1,444 @@
+:global(*) {
+  box-sizing: border-box;
+}
+:global(html) {
+  scroll-behavior: smooth;
+}
+:global(body) {
+  margin: 0;
+  background: #f3f0e8;
+  color: #142019;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  overflow: hidden;
+}
+.nav {
+  align-items: center;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 92rem;
+  padding: 1.25rem clamp(1.25rem, 5vw, 4rem);
+}
+.nav a {
+  color: #314239;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.wordmark {
+  letter-spacing: -0.025em;
+}
+.hero {
+  display: grid;
+  gap: clamp(2rem, 6vw, 6rem);
+  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+  margin: 0 auto;
+  max-width: 92rem;
+  padding: clamp(2.75rem, 6vw, 6rem) clamp(1.25rem, 5vw, 4rem)
+    clamp(3rem, 7vw, 6rem);
+}
+.hero h1 {
+  font-size: clamp(3.25rem, 6.3vw, 5.5rem);
+  letter-spacing: -0.065em;
+  line-height: 0.9;
+  margin: 0;
+  max-width: 16ch;
+}
+.eyebrow {
+  color: #39734a;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  margin: 0 0 1.1rem;
+  text-transform: uppercase;
+}
+.intro {
+  color: #526158;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  line-height: 1.55;
+  margin: 1.75rem 0 2rem;
+  max-width: 42rem;
+}
+.scanForm {
+  display: grid;
+  gap: 0.55rem;
+  max-width: 47rem;
+}
+.scanForm > label,
+.installForm label {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.scanForm > label:not(:first-child) {
+  margin-top: 0.45rem;
+}
+.scanForm > label span {
+  color: #69736c;
+  font-weight: 600;
+}
+.scanForm > div {
+  background: white;
+  border: 1px solid #ccd0c9;
+  border-radius: 0.85rem;
+  box-shadow: 0 1rem 3rem rgb(24 40 29 / 7%);
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr auto;
+  padding: 0.38rem;
+}
+.scanForm input,
+.scanForm textarea,
+.installForm input {
+  border: 0;
+  font: inherit;
+  min-height: 3.2rem;
+  outline: none;
+  padding: 0.75rem 0.9rem;
+  width: 100%;
+}
+.scanForm textarea {
+  border: 1px solid #ccd0c9;
+  border-radius: 0.75rem;
+  min-height: 6.5rem;
+  resize: vertical;
+}
+.scanForm input:focus-visible,
+.scanForm textarea:focus-visible,
+.scanForm button:focus-visible,
+.installForm input:focus-visible,
+.installForm button:focus-visible {
+  outline: 3px solid #62a875;
+  outline-offset: 2px;
+}
+.scanForm button,
+.installForm button {
+  background: #173f24;
+  border: 0;
+  border-radius: 0.58rem;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 3.2rem;
+  padding: 0.75rem 1.25rem;
+}
+.scanForm button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.scanForm .demoButton {
+  background: transparent;
+  color: #315d3d;
+  justify-self: start;
+  min-height: auto;
+  padding: 0.2rem 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+.scanForm small {
+  color: #6b756e;
+  line-height: 1.45;
+}
+.error {
+  background: #fde6e1;
+  border-radius: 0.7rem;
+  color: #8b211c;
+  max-width: 47rem;
+  padding: 0.85rem 1rem;
+}
+.promiseCard {
+  align-self: end;
+  background: #163d24;
+  border-radius: 1.4rem;
+  color: white;
+  padding: 1.7rem;
+  transform: rotate(1.5deg);
+}
+.promiseCard span {
+  color: #acd3b5;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.promiseCard strong {
+  display: block;
+  font-size: clamp(1.65rem, 3vw, 2.6rem);
+  letter-spacing: -0.045em;
+  line-height: 1.03;
+  margin: 1rem 0;
+}
+.promiseCard p {
+  color: #c8d9cb;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.results {
+  background: #162019;
+  color: white;
+  padding: clamp(3rem, 7vw, 6rem)
+    max(clamp(1.25rem, 5vw, 4rem), calc((100vw - 92rem) / 2));
+}
+.resultHeading {
+  align-items: end;
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.resultHeading h2,
+.installCard h2,
+.how h2 {
+  font-size: clamp(2rem, 5vw, 4.5rem);
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  margin: 0;
+}
+.resultHeading p:last-child {
+  color: #aebbb1;
+}
+.diagnosisTag {
+  align-items: baseline;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-width: 18rem;
+  text-align: right;
+}
+.diagnosisTag strong {
+  color: #8ad09a;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.diagnosisTag span {
+  color: #aebbb1;
+  font-size: 0.78rem;
+}
+.findings {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 2rem;
+}
+.findings article {
+  background: #202e24;
+  border: 1px solid #354438;
+  border-radius: 0.9rem;
+  padding: 1rem;
+}
+.findings article > span {
+  color: #f3bd70;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.findings article[data-passed="true"] > span {
+  color: #8ad09a;
+}
+.findings strong {
+  display: block;
+  margin-top: 0.55rem;
+}
+.findings p {
+  color: #aebbb1;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  margin: 0.5rem 0 0;
+}
+.previewGrid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+.previewCard {
+  background: #f8f5ed;
+  border-radius: 1rem;
+  color: #17211a;
+  min-width: 14rem;
+  padding: 1.15rem;
+}
+.previewCard > div {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 3rem;
+}
+.previewCard > div span {
+  color: #39734a;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.previewCard > div small {
+  color: #69736c;
+  line-height: 1.35;
+}
+.previewCard h3 {
+  font-size: 1.3rem;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 1.2rem 0 0.75rem;
+}
+.previewCard p,
+.previewCard li {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.previewCard ul {
+  border-top: 1px solid #daddd6;
+  margin: 0.9rem 0 0;
+  padding: 0.8rem 0 0 1rem;
+}
+.evidenceNote {
+  border: 1px solid #354438;
+  border-radius: 0.9rem;
+  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+}
+.sourceRequest {
+  background: #302b20;
+  border: 1px solid #62583e;
+  border-radius: 0.9rem;
+  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+}
+.sourceRequest p {
+  color: #d6c9a6;
+  margin: 0.35rem 0 0;
+}
+.evidenceNote p {
+  color: #aebbb1;
+  margin: 0.35rem 0 0;
+}
+.installCard {
+  align-items: center;
+  background: #d8efdd;
+  border-radius: 1.2rem;
+  color: #142019;
+  display: grid;
+  gap: 3rem;
+  grid-template-columns: 1fr minmax(18rem, 0.65fr);
+  margin-top: 3rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+.installCard p:not(.eyebrow) {
+  color: #4a5a50;
+  line-height: 1.5;
+}
+.installForm {
+  background: white;
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.55rem;
+}
+.installForm label {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.25rem 0.5rem 0;
+}
+.installForm input {
+  border-bottom: 1px solid #d7dbd5;
+}
+
+.how {
+  margin: 0 auto;
+  max-width: 92rem;
+  padding: clamp(4rem, 8vw, 8rem) clamp(1.25rem, 5vw, 4rem);
+}
+.how > div {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 3rem;
+}
+.how article {
+  border-top: 1px solid #bfc5bd;
+  padding-top: 1rem;
+}
+.how article span {
+  color: #39734a;
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+.how h3 {
+  font-size: 1.35rem;
+  margin: 1.8rem 0 0.6rem;
+}
+.how article p {
+  color: #59675e;
+  line-height: 1.5;
+  margin: 0;
+}
+.footer {
+  border-top: 1px solid #c9cec6;
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 84rem;
+  padding: 1.5rem 0 2.5rem;
+}
+.footer span {
+  color: #69736c;
+  font-size: 0.82rem;
+}
+.footer div {
+  display: flex;
+  gap: 1.25rem;
+}
+.footer a {
+  color: #285735;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+@media (max-width: 54rem) {
+  .hero,
+  .installCard {
+    grid-template-columns: 1fr;
+  }
+  .promiseCard {
+    max-width: 30rem;
+    transform: none;
+  }
+  .findings,
+  .how > div {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 38rem) {
+  .nav a:not(.wordmark) {
+    display: none;
+  }
+  .scanForm > div {
+    grid-template-columns: 1fr;
+  }
+  .resultHeading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .diagnosisTag {
+    text-align: left;
+  }
+  .findings,
+  .how > div {
+    grid-template-columns: 1fr;
+  }
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+    margin: 0 1.25rem;
+  }
+}

@@ -1,0 +1,102 @@
+.adaptive-panel[hidden] {
+  display: none !important;
+}
+
+.adaptive-panel {
+  --adaptive-accent: var(--color-foreground, #173f24);
+  --adaptive-border: color-mix(in srgb, var(--adaptive-accent) 18%, transparent);
+  --adaptive-surface: color-mix(in srgb, var(--adaptive-accent) 5%, white);
+  color: var(--color-foreground, #17211a);
+  margin-block: clamp(1rem, 2vw, 1.5rem);
+}
+
+.adaptive-panel__content {
+  background: var(--adaptive-surface);
+  border: 1px solid var(--adaptive-border);
+  border-radius: 0.85rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.adaptive-panel__eyebrow {
+  color: color-mix(in srgb, var(--adaptive-accent) 78%, #fff);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  margin: 0 0 0.55rem;
+  text-transform: uppercase;
+}
+
+.adaptive-panel__heading {
+  color: inherit;
+  font: inherit;
+  font-size: clamp(1.15rem, 2.2vw, 1.45rem);
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.adaptive-panel__supporting-line {
+  color: color-mix(in srgb, currentColor 74%, transparent);
+  line-height: 1.45;
+  margin: 0.7rem 0 0;
+}
+
+.adaptive-panel__benefits {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+
+.adaptive-panel__benefits li {
+  align-items: start;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: 1rem 1fr;
+  line-height: 1.45;
+}
+
+.adaptive-panel__benefits li::before {
+  color: var(--adaptive-accent);
+  content: "✓";
+  font-weight: 800;
+}
+
+.adaptive-panel__proof {
+  border-inline-start: 2px solid var(--adaptive-accent);
+  font-size: 0.95em;
+  font-style: italic;
+  line-height: 1.5;
+  margin: 1rem 0 0;
+  padding-inline-start: 0.8rem;
+}
+
+.adaptive-panel__reassurance {
+  border-top: 1px solid var(--adaptive-border);
+  font-size: 0.85em;
+  font-weight: 650;
+  margin: 1rem 0 0;
+  padding-top: 0.8rem;
+}
+
+.adaptive-panel__faq {
+  margin-top: 1rem;
+}
+
+.adaptive-panel__faq-question {
+  cursor: pointer;
+  font-weight: 650;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.adaptive-panel__faq-question:focus-visible {
+  outline: 2px solid var(--adaptive-accent);
+  outline-offset: 0.2rem;
+}
+
+.adaptive-panel__faq-answer {
+  margin: 0 0 0.5rem;
+}
