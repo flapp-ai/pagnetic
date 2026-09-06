@@ -61,10 +61,18 @@ Replace these paths with the production HTTPS origin during submission.
 9. Activate the Web Pixel, place the supplied test order, and verify the decision-to-order join.
 10. Activate the kill switch and verify immediate original fallback.
 
-## Assets still requiring owner approval
+## Prepared listing assets
 
-- 1200 × 1200 app icon
-- listing feature image and video decision
-- three or more current product screenshots
-- demo-store URL and password if applicable
-- final app name, company identity, support email, and localized listing choices
+- App icon: `docs/app-store-assets/pagnetic-app-icon.png` — 1200 × 1200 PNG, square corners, padded mark, no text or Shopify trademark.
+- Feature media: `docs/app-store-assets/00-feature-media-free-scanner.png` — 1600 × 900 PNG. Alt text: “Pagnetic’s free product and campaign-message preview form.” No video for the initial submission.
+- Screenshot 1: `docs/app-store-assets/01-free-message-preview.png` — 1600 × 900 PNG. Alt text: “Pagnetic compares the original product message with source-backed proposed alternatives.”
+- Screenshot 2: `docs/app-store-assets/02-source-backed-message-review.png` — 1600 × 900 PNG. Alt text: “A merchant reviews an exact proposed product message beside its current product source.”
+- Screenshot 3: `docs/app-store-assets/03-guided-theme-activation.png` — 1600 × 900 PNG. Alt text: “Pagnetic guides the merchant to save the approved panel on the published product template.”
+
+The screenshots use deterministic demo data and contain no merchant/customer PII, browser chrome, prices, reviews or outcome guarantees. Each shows a different actual product surface. Final upload and Shopify automated review remain pending App Store registration.
+
+## Still requiring submission input or verification
+
+- Demo-store URL and password/instructions if Shopify requires them for the reviewer path.
+- Emergency developer-contact phone number.
+- Primary listing language: English (proposed); owner can add locales after initial review.

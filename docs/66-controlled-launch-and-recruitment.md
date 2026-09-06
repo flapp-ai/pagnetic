@@ -43,7 +43,7 @@ Weekly aggregate report: contacts, replies, qualified applications, invites, ins
 
 ## Remaining launch gates
 
-- Publish and verify this landing-page change; verify pagnetic.com routing separately from the Fly origin.
+- Verify pagnetic.com routing separately from the already-published Fly origin.
 - Configure and test approved pricing/trial in Shopify, preserving legacy entitlements.
 - Resolve Shopify public distribution/review and obtain a valid installation path; limited listing visibility is not an approval bypass.
 - Meet store-specific treatment/QA gates in doc65 before activation.
@@ -53,7 +53,7 @@ No customer acquisition, revenue uplift, automatic application processing, or pu
 
 ## Verified Shopify checkpoint, 2026-09-06
 
-Partner organization 5157971 lists Pagnetic (app 418274574337) as **Public app / Draft / 0 installs**. Opening Manage submission redirects to `https://partners.shopify.com/5157971/apps/register`: the organization must complete its associated-account declaration, Partner Program Agreement verification, and one-time $19 registration payment. Owner input is required for the factual account declaration and payment. Pricing configuration, limited visibility, assets and submission have not been saved in Shopify by this work.
+Partner organization 5157971 lists Pagnetic (app 418274574337) as **Public app / Draft / 0 installs**. Opening Manage submission redirects to `https://partners.shopify.com/5157971/apps/register`: the organization must complete its associated-account declaration, Partner Program Agreement verification, and one-time $19 registration payment. Owner input is required for the factual account declaration and payment. Pricing configuration, limited visibility and submission have not been saved in Shopify by this work. The complete first-pass listing copy and required image assets are prepared locally, ready to upload after registration.
 
 Protected customer data draft has App functionality and Analytics selected, no optional name/email/phone/address fields selected, and 9/9 protection questions complete. Shopify states review happens after App Store listing submission. This is a completed draft, not production access approval.
 
@@ -64,3 +64,11 @@ The `https://pagnetic.com` connection timed out in this check; use the verified 
 Public landing and terms changes deployed as `pagnetic:deployment-01M1W2VMAT1SKV1YCXYVEW8WMX`, machine version 25. TypeScript, lint and production build passed for the landing change; TypeScript and build passed again after the terms update. Fly health recovered after normal startup and returned 200 at 19:27:00Z; automation/privacy returned 200 and encrypted backup/restore verified at 19:27:04Z. Browser inspection of `https://pagnetic.fly.dev/` confirmed the new message, $49/30-day offer, five-store cohort and correctly addressed email application link. No billing or treatment flag was enabled.
 
 DNS check: apex currently resolves to `31.186.11.254`; www points to the apex. Fly lists both custom-domain certificates as Not verified. Custom-domain launch remains open.
+
+## Latest reviewed deployment, 2026-09-06
+
+The approved commercial contract was corrected in code to the Founding Beta: USD 49/month, 30-day trial, one active product and up to three campaign messages. The older USD 99 draft remains historical and cannot be selected as the active offer. Shopify App Pricing verification requires the exact configured plan handle, monthly USD 49.00 contract and active state; Shopify's zero-cost development-store representation is accepted only for an explicitly allowlisted shop. Both billing and offer-publication flags remain off until the dashboard plan and end-to-end no-charge development-store path are verified.
+
+Pinned Node 24 verification passed 360/360 tests, typecheck, lint, application build and Shopify extension build. Fly image `pagnetic:deployment-01M1W3XVM47FJF814A99ZKD94E` is running as machine version 26 with 1/1 health checks passing. Startup found all 28 migrations current, automation/privacy returned HTTP 200, and encrypted backup `pagnetic-993315cb-5051-420d-83ec-9f97d5315be9.sqlite.enc` passed remote readback and isolated restore. The production checker passes all 47 infrastructure checks. Billing/treatment flags were not enabled.
+
+Listing assets are prepared in `docs/app-store-assets/`: 1200x1200 PNG icon, 1600x900 feature media, and three 1600x900 actual-interface screenshots. The remaining Shopify-controlled sequence is registration/payment, App Pricing plan configuration, listing upload, automated checks/protected-data review, no-charge development-store billing test, and submission.

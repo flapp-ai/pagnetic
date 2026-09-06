@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title">
+  <title id="title">Pagnetic app icon</title>
+  <rect width="1200" height="1200" fill="#173f24"/>
+  <path fill="#f6f1e7" d="M300 975V225h315c184 0 305 103 305 266 0 170-125 278-315 278H510v206H300Zm210-382h94c70 0 111-35 111-96 0-59-40-92-111-92h-94v188Z"/>
+  <circle cx="860" cy="795" r="78" fill="#8ad09a"/>
+  <circle cx="991" cy="664" r="51" fill="#8ad09a"/>
+  <circle cx="1045" cy="523" r="30" fill="#8ad09a"/>
+</svg>

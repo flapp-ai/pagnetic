@@ -12,6 +12,8 @@ Startup applied only additive migration `20260906120000_adaptive_package_reviews
 
 The owner-approved terms date is active as `2026-09-06`. Production verification confirms Shopify billing, v2 serving, shadow mode, model use and offer publication are all explicitly `false`, so Original remains the serving state. A Make HTTPS alert endpoint accepted the setup payload with HTTP 200 and is installed as an encrypted Fly secret. After the secret rollout, machine version 24 is healthy with 1/1 checks passing, a new encrypted off-volume backup/readback/restore verified at `2026-09-06T18:51:50.373Z`, and **all 47 production readiness checks pass**. After repairing the Gmail authorization scope and reactivating the scenario, Make recorded the production-originated `EMAIL_DELIVERY_TEST` as a successful three-operation run at 2026-09-06 22:07 local time; the owner confirmed receipt at `bilgi@flapp.ist`. Shopify app/configuration extensions were also built, validated and released as `pagnetic-ap06-20260906` (version ID `1117888282625`). This release is not App Store publication or treatment activation.
 
+The commercial/listing correction was deployed later on 2026-09-06 as Fly image `pagnetic:deployment-01M1W3XVM47FJF814A99ZKD94E`, machine version 26. The pinned Node 24 gate passed 360/360 tests, TypeScript, ESLint, application build and Shopify extension build. Startup confirmed 28/28 migrations current, automation/privacy returned HTTP 200, encrypted backup `pagnetic-993315cb-5051-420d-83ec-9f97d5315be9.sqlite.enc` passed readback/restore, and 47/47 production checks passed. This release corrects the active approved offer to USD 49/month with a 30-day trial and requires an exact Shopify App Pricing plan handle/price/currency/cadence; billing and offer-publication flags remain off.
+
 ## Code-controlled gate
 
 | Gate | Local evidence | Release rule |
@@ -32,7 +34,7 @@ The owner-approved terms date is active as `2026-09-06`. Production verification
 - AC-17: local semantic renderer, malicious-text and viewport contract coverage; actual theme/browser/performance measurements remain live gates.
 - AC-18: supported Messages add/update campaign action creates immutable mapping/evidence versions and invalidates the prior review without mutating a frozen experiment. Merchant task time is a pilot-learning gate.
 - AC-19: billing/public-offer flags remain closed; commercial approval is external.
-- AC-20: local privacy/recovery suites remain required in the full gate; real off-volume recovery and alert delivery remain operational gates.
+- AC-20: local privacy/recovery suites passed; encrypted off-volume backup/readback/restore and acknowledged external alert delivery passed in production. On 2026-09-06 the newest verified backup was restored into an isolated quarantined database, privacy replay completed with zero unresolved items, the hold was released with an immutable audit receipt, and a second application process opened that recovered database successfully: `/healthz`, `/privacy`, `/terms`, and `/support` all returned HTTP 200. The isolated process was stopped and only its temporary database and local verification manifest were removed; the live database and remote backup were untouched.
 
 ## Exact pilot sequence (not executed by this work)
 
@@ -52,7 +54,6 @@ The owner-approved terms date is active as `2026-09-06`. Production verification
 - Published supported-theme desktop/mobile/browser/keyboard/screen-reader evidence; actual variant, quantity, selling-plan, standard and accelerated checkout compatibility.
 - Real consent denied/allowed/late/revoked behavior, Web Pixel linkage, paid/refunded non-test order reconciliation, and Shopify API field-shape evidence.
 - Population full-path latency, CLS and capacity evidence on the intended Fly/PostgreSQL topology.
-- Real encrypted off-volume backup/readback/restore/reopening drill and externally acknowledged alert destination.
 - Legal identity/terms/privacy review, protected-data/distribution approval, incident owner, supported capacity, and any commercial pricing/billing publication.
 
 Passing local checks authorizes none of these external actions and is not a launch or lift claim.

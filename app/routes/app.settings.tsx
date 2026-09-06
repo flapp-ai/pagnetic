@@ -14,6 +14,7 @@ import {
   shopifyAppPricingUrlV2,
 } from "../services/shopify-app-pricing-v2.server";
 import {
+  ACTIVE_OFFER_VERSION_V2,
   offerCatalogV2,
   verifySubscriptionV2,
 } from "../services/subscription-v2.server";
@@ -60,11 +61,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const offers = offerCatalogV2();
   const currentOffer = subscription
     ? offers.find((offer) => offer.version === subscription.offerVersion) ?? null
-    : offers.find((offer) => !offer.legacyExisting) ?? null;
+    : offers.find((offer) => offer.version === ACTIVE_OFFER_VERSION_V2) ?? null;
   const providerConfigured = [
     process.env.SHOPIFY_PARTNER_ORGANIZATION_ID,
     process.env.SHOPIFY_PARTNER_API_TOKEN,
     process.env.SHOPIFY_PARTNER_APP_ID,
+    process.env.SHOPIFY_APP_PRICING_PLAN_HANDLE,
   ].every((value) => Boolean(value?.trim()));
   let pricingUrl: string | null = null;
   if (currentOffer?.publishable && process.env.SHOPIFY_APP_HANDLE) {

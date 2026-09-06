@@ -5,6 +5,7 @@ import type {
   ProviderSubscriptionV2,
   SubscriptionProviderV2,
 } from "./subscription-v2.server";
+import { ACTIVE_OFFER_VERSION_V2 } from "./subscription-v2.server";
 
 const PARTNER_API_VERSION = "2026-07";
 const RESPONSE_LIMIT_BYTES = 128 * 1024;
@@ -117,6 +118,16 @@ export function createShopifyAppPricingProviderV2(args: {
   const organizationId = requiredEnvironment(environment, "SHOPIFY_PARTNER_ORGANIZATION_ID");
   const accessToken = requiredEnvironment(environment, "SHOPIFY_PARTNER_API_TOKEN");
   const appId = requiredEnvironment(environment, "SHOPIFY_PARTNER_APP_ID");
+  const planHandle = requiredEnvironment(
+    environment,
+    "SHOPIFY_APP_PRICING_PLAN_HANDLE",
+  );
+  const noChargeShops = new Set(
+    (environment.SHOPIFY_APP_PRICING_NO_CHARGE_SHOPS ?? "")
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => SHOP_PATTERN.test(value)),
+  );
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(organizationId))
     throw new Error("SHOPIFY_APP_PRICING_ORGANIZATION_ID_INVALID");
   if (!GID_PATTERN.test(appId) || !appId.includes("/App/"))
@@ -125,6 +136,8 @@ export function createShopifyAppPricingProviderV2(args: {
     throw new Error("SHOPIFY_APP_PRICING_SHOP_ID_INVALID");
   if (accessToken.length > 500)
     throw new Error("SHOPIFY_APP_PRICING_ACCESS_TOKEN_INVALID");
+  if (!/^[A-Za-z0-9_-]{1,100}$/.test(planHandle))
+    throw new Error("SHOPIFY_APP_PRICING_PLAN_HANDLE_INVALID");
   const fetchImpl = args.fetchImpl ?? fetch;
   const now = args.now ?? (() => new Date());
   const endpoint = `https://partners.shopify.com/${organizationId}/api/${PARTNER_API_VERSION}/graphql.json`;
@@ -168,7 +181,7 @@ export function createShopifyAppPricingProviderV2(args: {
         return {
           shop,
           subscriptionId: null,
-          offerVersion: "pagnetic-core-99-v1",
+          offerVersion: ACTIVE_OFFER_VERSION_V2,
           state: "NO_ACTIVE_SUBSCRIPTION",
           sourceVersion: `partner-${PARTNER_API_VERSION}:${sourceHash}`,
           updatedAt: observedAt,
@@ -241,6 +254,17 @@ export function createShopifyAppPricingProviderV2(args: {
         items,
         legacySubscriptionId: legacyId ?? null,
       };
+      const approvedItem = items.find(
+        (item) =>
+          item.handle === planHandle &&
+          item.type === "FlatRatePrice" &&
+          item.active &&
+          item.currency === "USD" &&
+          (item.amount === "49.00" ||
+            (item.amount === "0.00" && noChargeShops.has(shop))),
+      );
+      if (active.billingPeriod !== "EVERY_30_DAYS" || !approvedItem)
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_MISMATCH");
       const sourceHash = digest(material);
       const anyActiveItem = items.some((item) => item.active);
       return {
@@ -248,7 +272,7 @@ export function createShopifyAppPricingProviderV2(args: {
         subscriptionId: typeof legacyId === "string"
           ? legacyId
           : `partner:${sourceHash}`,
-        offerVersion: "pagnetic-core-99-v1",
+        offerVersion: ACTIVE_OFFER_VERSION_V2,
         state: !anyActiveItem
           ? "FROZEN"
           : active.cancelAtEndOfCycle

@@ -13,6 +13,7 @@ import {
   shopifyAppPricingUrlV2,
 } from "../app/services/shopify-app-pricing-v2.server";
 import {
+  ACTIVE_OFFER_VERSION_V2,
   mapProviderSubscriptionStateV2,
   offerCatalogV2,
   subscriptionAllowsApprovedServingV2,
@@ -23,6 +24,8 @@ const partnerEnvironment = {
   SHOPIFY_PARTNER_ORGANIZATION_ID: "12345",
   SHOPIFY_PARTNER_API_TOKEN: "partner-token",
   SHOPIFY_PARTNER_APP_ID: "gid://shopify/App/99",
+  SHOPIFY_APP_PRICING_PLAN_HANDLE: "founding_beta",
+  SHOPIFY_APP_PRICING_NO_CHARGE_SHOPS: "billing-v2.myshopify.com",
 };
 
 function partnerResponse(activeSubscription: unknown, status = 200) {
@@ -54,12 +57,15 @@ function testDatabase() {
 test("new pricing remains unpublished unless both commercial flags are explicit", () => {
   const closed = offerCatalogV2({});
   assert.equal(closed.find((offer) => offer.version === "founding-beta-v1")?.priceUsdMonthly, 49);
+  assert.equal(closed.find((offer) => offer.version === ACTIVE_OFFER_VERSION_V2)?.priceUsdMonthly, 49);
+  assert.equal(closed.find((offer) => offer.version === ACTIVE_OFFER_VERSION_V2)?.publishable, false);
   assert.equal(closed.find((offer) => offer.version === "pagnetic-core-99-v1")?.publishable, false);
   const open = offerCatalogV2({
     SHOPIFY_BILLING_ENABLED: "true",
     PAGNETIC_V2_OFFER_PUBLISHABLE: "true",
   });
-  assert.equal(open.find((offer) => offer.version === "pagnetic-core-99-v1")?.publishable, true);
+  assert.equal(open.find((offer) => offer.version === ACTIVE_OFFER_VERSION_V2)?.publishable, true);
+  assert.equal(open.find((offer) => offer.version === "pagnetic-core-99-v1")?.publishable, false);
 });
 
 test("provider states map explicitly and cancellation retains only its paid-through window", () => {
@@ -204,7 +210,7 @@ test("Shopify App Pricing provider verifies an active or no-charge contract with
           endTime: "2026-10-01T00:00:00.000Z",
         },
         items: [{
-          handle: "pagnetic_core",
+          handle: "founding_beta",
           price: {
             __typename: "FlatRatePrice",
             active: true,
@@ -218,6 +224,7 @@ test("Shopify App Pricing provider verifies an active or no-charge contract with
   });
   const result = await provider.verify("billing-v2.myshopify.com");
   assert.equal(result.state, "ACTIVE");
+  assert.equal(result.offerVersion, ACTIVE_OFFER_VERSION_V2);
   assert.equal(result.periodEnd?.toISOString(), "2026-10-01T00:00:00.000Z");
   assert.match(result.subscriptionId ?? "", /^partner:[a-f0-9]{64}$/);
   assert.equal(requests[0]?.url, "https://partners.shopify.com/12345/api/2026-07/graphql.json");
@@ -248,6 +255,7 @@ test("missing active contract preserves the bounded free evaluation and provider
   });
   const source = await provider.verify("free-v2.myshopify.com");
   assert.equal(source.state, "NO_ACTIVE_SUBSCRIPTION");
+  assert.equal(source.offerVersion, ACTIVE_OFFER_VERSION_V2);
   assert.equal(mapProviderSubscriptionStateV2({ state: source.state, now: observedAt }), "FREE_EVALUATION");
 
   const graphqlFailure = createShopifyAppPricingProviderV2({
@@ -269,8 +277,8 @@ test("missing active contract preserves the bounded free evaluation and provider
       trialEndsAt: "2026-09-10T00:00:00.000Z",
       currentBillingCycle: null,
       items: [{
-        handle: "pagnetic_core",
-        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "99.00" },
+        handle: "founding_beta",
+        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "49.00" },
       }],
       legacySubscriptionId: "gid://shopify/AppSubscription/1",
     }),
@@ -278,6 +286,52 @@ test("missing active contract preserves the bounded free evaluation and provider
   await assert.rejects(
     spoofed.verify("free-v2.myshopify.com"),
     /SHOPIFY_APP_PRICING_RESPONSE_INVALID/,
+  );
+});
+
+test("provider rejects a plan whose handle, cadence, currency or price differs from the approved offer", async () => {
+  const provider = createShopifyAppPricingProviderV2({
+    shopId: "gid://shopify/Shop/8",
+    environment: partnerEnvironment,
+    fetchImpl: async () => partnerResponse({
+      shop: { id: "gid://shopify/Shop/8", myshopifyDomain: "mismatch.myshopify.com" },
+      billingPeriod: "EVERY_30_DAYS",
+      cancelAtEndOfCycle: false,
+      trialEndsAt: "2026-10-05T00:00:00.000Z",
+      currentBillingCycle: null,
+      items: [{
+        handle: "founding_beta",
+        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "99.00" },
+      }],
+      legacySubscriptionId: null,
+    }),
+  });
+  await assert.rejects(
+    provider.verify("mismatch.myshopify.com"),
+    /SHOPIFY_APP_PRICING_OFFER_MISMATCH/,
+  );
+});
+
+test("provider rejects no-charge subscriptions outside the explicit development-store allowlist", async () => {
+  const provider = createShopifyAppPricingProviderV2({
+    shopId: "gid://shopify/Shop/8",
+    environment: partnerEnvironment,
+    fetchImpl: async () => partnerResponse({
+      shop: { id: "gid://shopify/Shop/8", myshopifyDomain: "public-v2.myshopify.com" },
+      billingPeriod: "EVERY_30_DAYS",
+      cancelAtEndOfCycle: false,
+      trialEndsAt: "2026-10-05T00:00:00.000Z",
+      currentBillingCycle: null,
+      items: [{
+        handle: "founding_beta",
+        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "0.00" },
+      }],
+      legacySubscriptionId: null,
+    }),
+  });
+  await assert.rejects(
+    provider.verify("public-v2.myshopify.com"),
+    /SHOPIFY_APP_PRICING_OFFER_MISMATCH/,
   );
 });
 

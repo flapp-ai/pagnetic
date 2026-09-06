@@ -22,6 +22,8 @@ export type OfferV2 = {
   publishable: boolean;
 };
 
+export const ACTIVE_OFFER_VERSION_V2 = "pagnetic-founding-49-30d-v1";
+
 export function offerCatalogV2(
   environment: Record<string, string | undefined> = process.env,
 ): OfferV2[] {
@@ -41,7 +43,15 @@ export function offerCatalogV2(
       version: "pagnetic-core-99-v1",
       name: "Pagnetic Core",
       priceUsdMonthly: 99,
-      evaluation: "One bounded measurement check and one registered message test; timing follows the measured forecast, not a fixed 45-day promise.",
+      evaluation: "Historical proposed offer. It is retained for immutable records and is not available to new merchants.",
+      legacyExisting: false,
+      publishable: false,
+    },
+    {
+      version: ACTIVE_OFFER_VERSION_V2,
+      name: environment.PUBLIC_BETA_PLAN_NAME?.trim() || "Founding Beta",
+      priceUsdMonthly: 49,
+      evaluation: "One active product and up to three campaign messages. Shopify provides a 30-day trial before monthly billing.",
       legacyExisting: false,
       publishable: publishNewOffer,
     },

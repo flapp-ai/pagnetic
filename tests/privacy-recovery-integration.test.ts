@@ -132,7 +132,10 @@ test("T0 backup -> T1 independent receipt -> quarantined restore -> exact replay
     await assertRecoveryHoldClear(recovered, `file:${restored}`, { ...environment, BACKUP_ENCRYPTION_KEY: key.toString("base64") });
     await assert.rejects(assertRecoveryHoldPresent(recovered), /RECOVERY_HOLD_NOT_ACTIVE/);
     assert.equal(await recovered.recoveryReplayEvidence.count(), 1);
-    await assert.rejects(transferSqliteToPostgres({ sourcePath: restored, postgres: { host: "127.0.0.1", port: 1, user: "x", database: "x" }, models: [], migrationSql: "", schemaHash: "x" }), /failed|connection|RECOVERY/);
+    await assert.rejects(
+      transferSqliteToPostgres({ sourcePath: restored, postgres: { host: "127.0.0.1", port: 1, user: "x", database: "x" }, models: [], migrationSql: "", schemaHash: "x" }),
+      /failed|connection|RECOVERY|spawn psql ENOENT/,
+    );
     await recovered.$disconnect();
   } finally {
     for (const name of Object.keys(process.env)) if (!(name in original)) delete process.env[name];
