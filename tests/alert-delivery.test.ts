@@ -35,7 +35,7 @@ async function fixture() {
     data: {
       merchantId: merchant.id,
       fingerprint: "health:1",
-      severity: "SEV2",
+      severity: "SEV1",
       kind: "MEASUREMENT_HEALTH",
       summary: "Measurement needs repair",
       openedAt: now,
@@ -287,7 +287,68 @@ test("alert worker leaves other tenants and other outbox types untouched", async
   }
 });
 
-test("missing endpoint is explicit and legacy HTTP failure is not success", async () => {
+test("durable delivery deduplicates repeated cycles when V2 is disabled", async () => {
+  const f = await fixture();
+  try {
+    let sends = 0;
+    const fetchImpl: typeof fetch = async () => {
+      sends += 1;
+      return new Response(null, { status: 204 });
+    };
+    const environment = { ...f.environment, PAGNETIC_V2_ENABLED: "false" };
+    const first = await deliverOperationalAlerts({
+      ...f,
+      environment,
+      alerts: [f.alert],
+      fetchImpl,
+    });
+    const repeated = await deliverOperationalAlerts({
+      ...f,
+      environment,
+      now: new Date(f.now.getTime() + 5000),
+      alerts: [f.alert],
+      fetchImpl,
+    });
+    assert.equal(first.delivered, 1);
+    assert.equal(repeated.delivered, 0);
+    assert.equal(sends, 1);
+    assert.equal(await f.db.outboxEvent.count(), 1);
+  } finally {
+    await f.close();
+  }
+});
+
+test("warning alerts stay local and do not consume the remote webhook", async () => {
+  const f = await fixture();
+  try {
+    const warning = await f.db.operationalAlert.update({
+      where: { id: f.alert.id },
+      data: { severity: "SEV2" },
+    });
+    let sends = 0;
+    const result = await deliverOperationalAlerts({
+      ...f,
+      environment: { ...f.environment, PAGNETIC_V2_ENABLED: "false" },
+      alerts: [warning],
+      fetchImpl: async () => {
+        sends += 1;
+        return new Response(null, { status: 204 });
+      },
+    });
+    assert.equal(result.status, "IDLE");
+    assert.equal(result.delivered, 0);
+    assert.equal(sends, 0);
+    assert.equal(await f.db.outboxEvent.count(), 0);
+    assert.equal(
+      (await f.db.operationalAlert.findUniqueOrThrow({ where: { id: warning.id } })).status,
+      "OPEN",
+    );
+  } finally {
+    await f.close();
+  }
+});
+
+test("missing endpoint is explicit and HTTP failure remains retryable", async () => {
   const f = await fixture();
   try {
     const fetchImpl: typeof fetch = async () => {
@@ -300,15 +361,14 @@ test("missing endpoint is explicit and legacy HTTP failure is not success", asyn
       fetchImpl,
     });
     assert.equal(missing.status, "NOT_CONFIGURED");
-    await assert.rejects(
-      deliverOperationalAlerts({
-        ...f,
-        environment: { ALERT_WEBHOOK_URL: f.environment.ALERT_WEBHOOK_URL },
-        alerts: [f.alert],
-        fetchImpl: async () => new Response(null, { status: 500 }),
-      }),
-      /ALERT_HTTP_500/,
-    );
+    const failed = await deliverOperationalAlerts({
+      ...f,
+      environment: { ALERT_WEBHOOK_URL: f.environment.ALERT_WEBHOOK_URL },
+      alerts: [f.alert],
+      fetchImpl: async () => new Response(null, { status: 500 }),
+    });
+    assert.equal(failed.status, "RETRY_PENDING");
+    assert.equal(failed.failed, 1);
   } finally {
     await f.close();
   }

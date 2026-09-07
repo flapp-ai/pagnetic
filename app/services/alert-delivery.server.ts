@@ -7,9 +7,17 @@ import {
   markOutboxDelivered,
   skipOutboxEvent,
 } from "./job-outbox.server";
-import { mvpV2Config } from "./mvp-v2";
-
 type Alert = { id: string; severity: string; kind: string; summary: string };
+
+const REMOTE_SEVERITIES = new Set(["SEV1"]);
+const REMOTE_FAILURE_KINDS = new Set(["AUTOMATION_FAILURE"]);
+
+function isRemoteActionable(alert: Alert) {
+  return (
+    REMOTE_SEVERITIES.has(alert.severity) ||
+    REMOTE_FAILURE_KINDS.has(alert.kind)
+  );
+}
 
 function configuredEndpoint(environment: NodeJS.ProcessEnv) {
   if (!environment.ALERT_WEBHOOK_URL) return null;
@@ -54,19 +62,13 @@ export async function deliverOperationalAlerts(args: {
   const currentTime = () => args.now ?? new Date();
   if (!endpoint)
     return { status: "NOT_CONFIGURED", delivered: 0, failed: 0, skipped: 0 };
-  if (!mvpV2Config(environment).enabled) {
-    if (args.alerts.length) await postAlerts(endpoint, args.alerts, fetchImpl);
-    return {
-      status: args.alerts.length ? "DELIVERED" : "IDLE",
-      delivered: args.alerts.length,
-      failed: 0,
-      skipped: 0,
-    };
-  }
-
   // Retry payload is the immutable snapshot from this incident's first enqueue.
   // Repeated observations or changed summary text do not create another delivery.
-  for (const alert of args.alerts.slice(0, 100)) {
+  // Lower-severity notices remain visible in-app without consuming remote-alert
+  // operations. This behavior is independent of the storefront V2 rollout.
+  for (const alert of args.alerts
+    .filter(isRemoteActionable)
+    .slice(0, 100)) {
     await args.db.$transaction(async (tx) => {
       const current = await tx.operationalAlert.findFirst({
         where: { id: alert.id, merchantId: args.merchantId, status: "OPEN" },
