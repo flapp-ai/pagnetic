@@ -574,6 +574,12 @@ Append dated entries with package/requirement IDs, changes, tests, unresolved is
 - Current source-bound Node24.19.0 gate passes322/322 tests, typecheck, full lint, React Router production build, Shopify app build, current PostgreSQL track/rehearsal and current statistical hashes. Manifest: `docs/release-checks/local-rvqmid/manifest.json`;315 source files; source SHA256 `f8d8b17bd675c21b086d58438c9a1e01a332dfce5beef78cc97d8d127d071787`. `pnpm check:partner` passes31/31. Local `pnpm check:production` fails exactly16 environment/external checks and therefore correctly withholds production readiness.
 - Consolidated R01–R14, S01–S10 and AT01–AT30 audit found no additional ordinary safe code-controlled P0 after this checkpoint. Entries remain IN_PROGRESS where their acceptance definition includes real Shopify/browser/provider/human evidence. No Fly/Shopify deployment, production migration, secret, customer record, bucket, alert, billing, plan, charge or commercial publication changed.
 
+### 2026-09-07T17:12Z — Shopify submission confirmed
+
+- Live Partner dashboard for app418274574337 changed to Submitted and confirmed receipt; Shopify is assigning a reviewer. Review correspondence: bilgi@flapp.ist.
+- English primary listing and limited direct-link visibility confirmed on the receipt page. See docs67 for exact receipt URL and the final billing, assets and alert-delivery evidence.
+- Submission follow-through automation deleted after confirmation. Shopify approval/publication and store-specific experiment/PMF gates remain distinct and unresolved; this is not a full objective-completion claim.
+
 ### 2026-09-05T17:49Z — Astra final acceptance corrections A01–A03
 
 - A01: recovery now recognizes `OWNER_CONFIRMED_SECURE_DELIVERY` only after authenticating the exact retained request scope/key and signed request/shop/actor/part-count/timestamp delivery audit. It returns `data-copy-delivery-authenticated` without recollection or deadline extension. Actual backup→restore→receipt replay passes after the artifact is expired and purged; missing/tampered audit fails promptly. Astra's exact reproduction now succeeds instead of reaching `PRIVACY_RECOVERY_STEP_LIMIT`.

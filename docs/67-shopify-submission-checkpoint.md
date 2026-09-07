@@ -1,6 +1,12 @@
 # Shopify submission checkpoint — 2026-09-07
 
-Status: in progress. This is evidence for the current Shopify-controlled launch sequence. It does not claim Shopify approval or a public listing.
+Status: SUBMITTED for Shopify review, verified live on 2026-09-07 at approximately 17:12 UTC. Shopify approval and published availability remain pending.
+
+## Authoritative submission receipt
+
+Root completed the final review step and clicked Submit for review under the owner's existing explicit approval. The live Partner dashboard changed to **Submitted**, displayed **Success! We received your submission.**, and stated that Shopify is assigning a reviewer. Review correspondence goes to `bilgi@flapp.ist`. The receipt URL is `https://partners.shopify.com/5157971/apps/418274574337/distribution/app-store`.
+
+The receipt also confirms English as primary and limited App Store visibility: when published, the listing will be accessible only through its direct URL. No fully-visible setting was enabled. The five-minute submission follow-through automation was deleted after this verified receipt to avoid unnecessary polling. Earlier remaining-step and login notes below are historical and superseded by this receipt. No app approval, real merchant experiment, or revenue uplift is claimed.
 
 ## Completed in Shopify
 
