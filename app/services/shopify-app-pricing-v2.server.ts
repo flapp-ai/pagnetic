@@ -60,9 +60,13 @@ function requiredEnvironment(
 
 function exactDate(value: unknown, code: string) {
   if (typeof value !== "string") throw new Error(code);
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime()) || date.toISOString() !== value)
+  // Shopify's DateTime scalar is RFC 3339, but it may omit fractional seconds.
+  // Requiring byte-for-byte equality with Date#toISOString() rejects otherwise
+  // valid values such as `2026-09-07T10:00:00Z` because JavaScript adds `.000`.
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(value))
     throw new Error(code);
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) throw new Error(code);
   return date;
 }
 
