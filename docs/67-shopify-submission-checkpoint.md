@@ -5,7 +5,7 @@ Status: in progress. This is evidence for the current Shopify-controlled launch 
 ## Completed in Shopify
 
 - App: Pagnetic (`418274574337`), submission/client ID `a419293d1339cc23b5841538d18a1710`, Partner ID `5157971`.
-- English is the primary listing language. The Pagnetic icon and three distinct prepared desktop screenshots are present. The listing copy, support address, merchant-review address, submission address, Online Store requirement and three feature statements are saved. Shopify currently requires a replacement feature image; the corrected 1600x900 asset is prepared locally but not yet attached.
+- English is the primary listing language. The Pagnetic icon, corrected 1600x900 feature image and three distinct prepared desktop screenshots are present. The listing copy, support address, merchant-review address, submission address, Online Store requirement and three feature statements are saved. After the owner attached and saved the corrected feature image, a fresh reload showed the feature upload control disabled in its attached state and exactly three screenshot sections.
 - Public plan `founding-beta` is USD 49 every 30 days with a 30-day trial. Development stores are free to test.
 - The public plan passed the owned development-store selection flow on `test1-eczm2zce.myshopify.com`: Shopify displayed `Free to test`, the owner-approved no-charge action completed, and Shopify redirected to `/app?plan_handle=founding-beta&charge_id=37160976690`.
 - Shopify App Pricing is enabled. The migration page reports `Draft and test plans completed` and `App Pricing enabled completed`. Shopify also exposes its automatic private `shopify-test` plan.
@@ -32,10 +32,15 @@ Status: in progress. This is evidence for the current Shopify-controlled launch 
 - The integration accepts the $0 private test contract only for the configured private handle and explicit development-store allowlist. Public stores must match the approved `founding-beta`, USD 49, every-30-days contract.
 - Targeted subscription tests pass 12/12. TypeScript and the production application build pass. Production deploy `deployment-01M1XEBHD4W1ZGCSQ68Y26RMQ2` reached healthy state with verified DNS; code is pushed through commit `ce716b4`.
 
+## Production alert delivery correction
+
+- Commit `4c31000` is deployed as Fly image `deployment-01M1XQMHDJ97PAQ89S120Q2FCK`, machine version 35. Fly reports the machine started with 1/1 health check passing; `/healthz` returns HTTP 200.
+- Remote operational delivery now uses durable incident idempotency regardless of the storefront V2 flag. SEV1 incidents and actual `AUTOMATION_FAILURE` events remain remotely actionable; lower-severity warnings remain visible in Pagnetic without consuming Make operations. Retry, resolution and reopen behavior remain covered.
+- Focused delivery tests pass 7/7 and TypeScript passes. Production automation runs at `2026-09-07 16:49:53`, `16:54:54` and `16:59:54 UTC` all completed with `delivery=IDLE`, `delivered=0`, `failed=0`, `skipped=0`. No test webhook was sent.
+
 ## Remaining controlled sequence
 
-1. Attach `docs/app-store-assets/00-feature-media-shopify-v2.png` as the required feature image and save the English listing. The three duplicate screenshots were removed; the three distinct screenshots remain.
-2. Re-open the submission summary, verify Shopify reports no remaining required-field issue, complete the truthful final requirements review, and submit the already owner-approved app for Shopify review.
-3. Record Shopify's returned status or exact rejection. Submission is not approval.
+1. Complete the truthful final requirements attestation and submit the owner-approved app for Shopify review.
+2. Record Shopify's returned status or exact rejection. Submission is not approval.
 
-The partner laptop is unlocked. Shopify's live file input is enabled and advertises `image/jpeg,image/png`; the corrected 1600x900 PNG and JPEG satisfy that contract. The supported browser upload API nevertheless rejects `fileChooser.setFiles` with `Not allowed`. The native macOS chooser can select either exact file by path, but its **Open** button remains disabled and Return has no effect. This is an upload-control failure, not a locked-session failure. No unsupported file-input bypass was used. Attaching this one prepared image remains the sole presently observed submission blocker; the app has not yet been submitted.
+The prior file-upload blocker was resolved manually by the owner and the corrected image was saved. Shopify Partner authentication is restored. A fresh listing review shows the corrected feature image attached, exactly three distinct screenshots, the Founding Beta USD 49/month plan with 30-day trial, three features, the Online Store requirement, and the screencast/testing instructions. The submission summary reports all preliminary steps and automated checks passed. The app has not yet been submitted, approved or made publicly visible; only the final requirements attestation and submission action remain.
