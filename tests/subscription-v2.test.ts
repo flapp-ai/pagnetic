@@ -308,7 +308,7 @@ test("provider rejects a plan whose handle, cadence, currency or price differs f
   });
   await assert.rejects(
     provider.verify("mismatch.myshopify.com"),
-    /SHOPIFY_APP_PRICING_OFFER_MISMATCH/,
+    /SHOPIFY_APP_PRICING_OFFER_AMOUNT_MISMATCH/,
   );
 });
 
@@ -356,7 +356,7 @@ test("provider rejects no-charge subscriptions outside the explicit development-
   });
   await assert.rejects(
     provider.verify("public-v2.myshopify.com"),
-    /SHOPIFY_APP_PRICING_OFFER_MISMATCH/,
+    /SHOPIFY_APP_PRICING_OFFER_AMOUNT_MISMATCH/,
   );
 });
 

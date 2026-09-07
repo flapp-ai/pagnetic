@@ -267,17 +267,21 @@ export function createShopifyAppPricingProviderV2(args: {
         items,
         legacySubscriptionId: legacyId ?? null,
       };
-      const approvedItem = items.find(
-        (item) =>
-          item.handle === planHandle &&
-          item.type === "FlatRatePrice" &&
-          item.active &&
-          item.currency === "USD" &&
-          (decimalEquals(item.amount, "49.00") ||
-            (decimalEquals(item.amount, "0.00") && noChargeShops.has(shop))),
-      );
-      if (active.billingPeriod !== "EVERY_30_DAYS" || !approvedItem)
-        throw new Error("SHOPIFY_APP_PRICING_OFFER_MISMATCH");
+      if (active.billingPeriod !== "EVERY_30_DAYS")
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_CADENCE_MISMATCH");
+      const approvedItem = items.find((item) => item.handle === planHandle);
+      if (!approvedItem)
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_HANDLE_MISMATCH");
+      if (approvedItem.type !== "FlatRatePrice")
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_TYPE_MISMATCH");
+      if (!approvedItem.active)
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_INACTIVE");
+      if (approvedItem.currency !== "USD")
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_CURRENCY_MISMATCH");
+      if (
+        !decimalEquals(approvedItem.amount, "49.00") &&
+        !(decimalEquals(approvedItem.amount, "0.00") && noChargeShops.has(shop))
+      ) throw new Error("SHOPIFY_APP_PRICING_OFFER_AMOUNT_MISMATCH");
       const sourceHash = digest(material);
       const anyActiveItem = items.some((item) => item.active);
       return {
