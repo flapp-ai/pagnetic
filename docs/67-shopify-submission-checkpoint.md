@@ -46,7 +46,8 @@ The receipt also confirms English as primary and limited App Store visibility: w
 
 ## Remaining controlled sequence
 
-1. Complete the truthful final requirements attestation and submit the owner-approved app for Shopify review.
-2. Record Shopify's returned status or exact rejection. Submission is not approval.
+1. Monitor `bilgi@flapp.ist` for Shopify's review response; do not poll the Partner dashboard continuously.
+2. If Shopify requests changes, record the exact issue and run only the targeted remediation/retest.
+3. After approval, use the limited direct listing URL to invite qualified founding-beta stores. Approval is not design-partner activation or evidence of uplift.
 
-The prior file-upload blocker was resolved manually by the owner and the corrected image was saved. Shopify Partner authentication is restored. A fresh listing review shows the corrected feature image attached, exactly three distinct screenshots, the Founding Beta USD 49/month plan with 30-day trial, three features, the Online Store requirement, and the screencast/testing instructions. The submission summary reports all preliminary steps and automated checks passed. The app has not yet been submitted, approved or made publicly visible; only the final requirements attestation and submission action remain.
+The prior file-upload and authentication blockers were resolved. The final requirements attestation and submission action completed successfully, and Shopify issued the receipt recorded at the top of this document. The app is submitted but not yet approved or publicly available.
