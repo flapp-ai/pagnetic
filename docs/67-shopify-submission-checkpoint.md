@@ -12,7 +12,7 @@ Status: RESUBMITTED and IN REVIEW after targeted remediation, verified live on 2
 - Commit `406429c` is pushed. Fly image `deployment-01M1YS0MED7PKXQVJF6RTA7Q36`, machine version 36, is started with 1/1 health check passing; `/healthz` returns HTTP 200.
 - Live recovery proof used only the owned development store, not the reviewer's shop: its offline credential was deliberately changed to expired invalid test markers, then a fresh Shopify Admin embedded request was opened. `/app` returned HTTP 200, the full Overview rendered, and Shopify token exchange replaced both markers with a new expiring credential. Messages also rendered after embedded navigation. No reviewer token, iframe URL or secret is retained in this document.
 - The original review-shop `/app` HTTP 500 cannot be replayed because Pagnetic does not control the reviewer session. The confirmed webhook defect and stale-session mechanism strongly explain the sequence, while the exact causal link to the reviewer's embedded error remains an evidence-backed inference rather than a claimed replay.
-- Both Shopify findings were marked resolved with the hosted reviewer walkthrough as visual proof. The feedback page changed to `2/2` and **Ready to resubmit**. After **Submit fixes**, Partner Dashboard changed to **In review**, **We're reviewing your response**, and **Success! We received your submission.** Review correspondence remains `bilgi@flapp.ist`; visibility remains limited to merchants with the direct URL after approval.
+- Both Shopify findings were marked resolved with the hosted reviewer walkthrough URL in Shopify's URL-only proof field. At that moment the file was the pre-fix narrated interface walkthrough, not a live repair capture; it did not by itself prove the authentication repair. Without withdrawing the pending submission, the file at that same submitted URL was subsequently replaced with the dated post-fix evidence described below. The feedback page changed to `2/2` and **Ready to resubmit**. After **Submit fixes**, Partner Dashboard changed to **In review**, **We're reviewing your response**, and **Success! We received your submission.** Review correspondence remains `bilgi@flapp.ist`; visibility remains limited to merchants with the direct URL after approval.
 
 ## Authoritative submission receipt
 
@@ -35,11 +35,11 @@ The receipt also confirms English as primary and limited App Store visibility: w
 
 ## Reviewer screencast
 
-- `public/reviewer-6f2c9b31/pagnetic-shopify-review.mp4` is a 4 minute 27 second narrated walkthrough assembled from the prepared actual Pagnetic interface views. It is a narrated still-image walkthrough, not a continuous live screen recording.
-- It covers the public preview, evidence-backed message review, merchant approval boundary, Shopify theme activation, shopper fallback, measurement, pause behavior and Shopify-hosted plan approval.
+- `public/reviewer-6f2c9b31/pagnetic-shopify-review.mp4` is now a 5 minute 50 second narrated sequence of three current post-fix screenshots captured from the owned development store's live embedded Overview, Messages and Results routes on 2026-09-07. It explicitly identifies itself as dated screenshots, not a continuous recording.
+- It explains the reviewer failure, confirmed webhook defect, narrowly guarded stale-session recovery, controlled forced-expiry test, current rendered routes, eight focused auth regressions, and the limitation that the reviewer store itself was not replayed.
 - Narration source: `docs/app-store-assets/reviewer-screencast-narration.txt`.
 - Reproducible builder: `scripts/build-review-screencast.swift`.
-- Local validation: the final MP4 is 13 MB and contains video and audio tracks. It is deployed at `https://pagnetic.fly.dev/reviewer-6f2c9b31/pagnetic-shopify-review.mp4`; an independent HTTP check returned `200`, `video/mp4`, byte-range support and the expected content length. That URL is saved in Shopify.
+- Local validation: the replacement MP4 is approximately 14 MB, duration `350.373333` seconds, contains H.264 video plus AAC narration, and has SHA-256 `71f3c66f135e65b50437e949e7c93f3eba080275389dfba96e96eb676a7b8903`. It is served at the unchanged URL `https://pagnetic.fly.dev/reviewer-6f2c9b31/pagnetic-shopify-review.mp4`, which is already saved in Shopify.
 
 ## Runtime pricing integration verified
 

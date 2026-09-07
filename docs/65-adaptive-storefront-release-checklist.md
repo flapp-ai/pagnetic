@@ -1,6 +1,14 @@
 # Adaptive storefront AP-06 release checklist
 
-Date: 2026-09-06  
+## Current status overlay — 2026-09-07
+
+The dated deployment snapshots and disabled-billing instructions below are historical, not current production configuration. Current repair source is `406429c`, deployed to Fly machine version 36/image `deployment-01M1YS0MED7PKXQVJF6RTA7Q36`, independently verified started with 1/1 health check passing. Targeted authentication tests pass 8/8, with TypeScript and production build passing. Owned-development-store expired-credential recovery and embedded Overview/Messages/Results navigation passed; this is not a replay of Shopify's reviewer session.
+
+Both Shopify runtime findings were marked resolved and fixes resubmitted. The Partner dashboard independently confirmed **In review — We're reviewing your response**. Approval and public availability remain pending; limited direct-link visibility remains selected. Shopify App Pricing is enabled with the approved `founding-beta` USD 49 every 30 days/30-day trial contract and the exact development-store-only private test plan. Historical commercial approvals need not be requested again. See [doc67](./67-shopify-submission-checkpoint.md) for current receipts and limitations, and [doc26](./26-mvp-v2-implementation-status.md) for the implementation ledger.
+
+This does not close the partner-specific launch gates below: real merchant/product/ad evidence, human content review, exact package approval, intended-store commerce/consent/accessibility/performance evidence, or real customer learning. Preserve Original fallback and existing scoped rollout holds until those requirements are satisfied. The historical isolated recovery rehearsal remains evidence for its tested release, not a claim of a newly repeated recovery drill.
+
+Date: 2026-09-06
 Contract: `adaptive-a-1` / `adaptive-owner-review-a1`  
 State: AP-06 application and Shopify extension deployed safely; all production infrastructure readiness checks pass. Live treatment/pilot approval remains closed pending external QA/content gates.
 
