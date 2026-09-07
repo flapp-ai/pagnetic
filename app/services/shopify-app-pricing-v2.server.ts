@@ -78,6 +78,15 @@ function digest(value: unknown) {
   return createHash("sha256").update(canonicalQueuePayload(value)).digest("hex");
 }
 
+function decimalEquals(value: string | null, expected: string) {
+  if (value == null) return false;
+  const normalize = (candidate: string) => {
+    const [whole, fraction = ""] = candidate.split(".");
+    return `${whole.replace(/^0+(?=\d)/, "")}.${fraction.replace(/0+$/, "")}`;
+  };
+  return normalize(value) === normalize(expected);
+}
+
 export function shopifyAppPricingUrlV2(args: {
   shop: string;
   appHandle: string;
@@ -264,8 +273,8 @@ export function createShopifyAppPricingProviderV2(args: {
           item.type === "FlatRatePrice" &&
           item.active &&
           item.currency === "USD" &&
-          (item.amount === "49.00" ||
-            (item.amount === "0.00" && noChargeShops.has(shop))),
+          (decimalEquals(item.amount, "49.00") ||
+            (decimalEquals(item.amount, "0.00") && noChargeShops.has(shop))),
       );
       if (active.billingPeriod !== "EVERY_30_DAYS" || !approvedItem)
         throw new Error("SHOPIFY_APP_PRICING_OFFER_MISMATCH");

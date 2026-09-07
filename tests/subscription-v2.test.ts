@@ -327,7 +327,7 @@ test("provider accepts Shopify RFC3339 timestamps without fractional seconds", a
       currentBillingCycle: null,
       items: [{
         handle: "founding_beta",
-        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "0.00" },
+        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "0" },
       }],
       legacySubscriptionId: null,
     }),
