@@ -38,3 +38,11 @@ Passing the automated matrix proves deterministic invariants, not that merchants
 - at least 80% useful/clear drafts inside the declared supported subset.
 
 Those targets require independent human review and must remain unverified until the completed rubric is saved. The matrix must include irrelevant ads, short sources, contradictions, excluded categories, markup/script injection, unsupported language and exact duplicate outputs. Test fixtures do not establish market lift or semantic understanding.
+
+## Ready-to-review human pack
+
+- Review sheet: [`evaluation/message-quality-human-review-v1/README.md`](./evaluation/message-quality-human-review-v1/README.md)
+- Complete machine-readable cases: [`evaluation/message-quality-human-review-v1/cases.json`](./evaluation/message-quality-human-review-v1/cases.json)
+- Reproducible generator: [`../scripts/generate-human-message-review.ts`](../scripts/generate-human-message-review.ts)
+
+The pack contains 50 explicitly synthetic cases generated through the current `diagnoseProductMessage` implementation: 23 supported-output cases and 27 required-abstention cases. It covers low-risk supported products, irrelevant campaigns, short/repeated and identical sources, contradictions, excluded categories, hostile markup/instructions and unsupported language. The generator verifies the expected propose/abstain behavior, exact output-to-source-span equality and resolvable evidence IDs. All human reviewer, usefulness, fabrication and rejection fields are empty; generating the pack does not pass the human gate.

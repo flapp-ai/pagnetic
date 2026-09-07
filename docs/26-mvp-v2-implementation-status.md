@@ -125,7 +125,7 @@ This overlay supersedes only the stale “not deployed/provider absent” clause
 | R14; S09 | IN_PROGRESS — release/submission traceable | Current Fly release, Shopify extension identity, PostgreSQL rehearsal, backup evidence, pricing and App Store submission receipt are recorded. Shopify approval, managed-PostgreSQL cutover and real cohort learning are not complete. |
 | S01; AT29 | VERIFIED | Additive migration/flag/outbox foundation and legacy-data compatibility remain verified; later production migrations are applied and current. |
 
-The remaining AT rows not named above retain their existing evidence and state. In particular, human usefulness review (R01/S05/AT17–AT18) and real merchant learning are not converted into engineering passes.
+The remaining AT rows not named above retain their existing evidence and state. In particular, human usefulness review (R01/S05/AT17–AT18) and real merchant learning are not converted into engineering passes. The 50-case human handoff is now prepared in `docs/evaluation/message-quality-human-review-v1/`: 23 supported-output and 27 required-abstention synthetic cases, with actual current composer output/evidence and blank human ratings. The generator invariants pass; an independent human must still complete every rating and rejection reason.
 
 ## External dependencies
 
@@ -145,7 +145,7 @@ For each actual blocker record: capability; exact missing value/approval; eviden
 
 | Owner / store | Shopify | Safe engineering |
 | --- | --- | --- |
-| Complete the independent 50-item content usefulness review; recruit and consent a qualified store; approve that store's exact content; verify its published theme/product, consent, standard/accelerated checkout, refund and pause journey; collect the real cohort and PMF evidence. | Review the submitted app, protected-data declaration and listing; either approve limited visibility or return concrete remediation. | No known code-controlled P0 remains before the review response. After a real store is available, run only the scoped store-specific QA/evidence capture. Managed PostgreSQL and production-shaped capacity testing are required before unattended multi-store scaling, not before the limited beta. |
+| Complete the prepared independent 50-item content review in `docs/evaluation/message-quality-human-review-v1/`; recruit and consent a qualified store; approve that store's exact content; verify its published theme/product, consent, standard/accelerated checkout, refund and pause journey; collect the real cohort and PMF evidence. | Review the submitted app, protected-data declaration and listing; either approve limited visibility or return concrete remediation. | No known code-controlled P0 remains before the review response. After a real store is available, run only the scoped store-specific QA/evidence capture. Managed PostgreSQL and production-shaped capacity testing are required before unattended multi-store scaling, not before the limited beta. |
 
 ## Implementation log
 
