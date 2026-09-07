@@ -39,6 +39,11 @@ import { themeEditorDeepLink } from "../services/pilot-setup";
 import { recordThemeActivation } from "../services/pilot-setup.server";
 import { publicAppOrigin } from "../services/public-origin.server";
 import {
+  createShopifyAppPricingProviderV2,
+  loadShopifyShopIdV2,
+} from "../services/shopify-app-pricing-v2.server";
+import { verifySubscriptionV2 } from "../services/subscription-v2.server";
+import {
   assertSelectedV2CutoverShop,
   assertCurrentV2TestStoreCutoverReceipt,
   beginSelectedTestStoreV2Cutover,
@@ -54,10 +59,37 @@ import { authenticate } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { admin, session, sessionToken } = await authenticate.admin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
   await ensurePilotRole({ db: prisma, merchantId: merchant.id, actor });
+  const pricingPlanHandle = new URL(request.url).searchParams.get("plan_handle");
+  if (pricingPlanHandle) {
+    try {
+      if (pricingPlanHandle !== process.env.SHOPIFY_APP_PRICING_PLAN_HANDLE)
+        throw new Error("SHOPIFY_APP_PRICING_REDIRECT_PLAN_MISMATCH");
+      const shopId = await loadShopifyShopIdV2((query) => admin.graphql(query));
+      await verifySubscriptionV2({
+        db: prisma,
+        merchantId: merchant.id,
+        provider: createShopifyAppPricingProviderV2({ shopId }),
+      });
+    } catch (error) {
+      await prisma.auditLog.create({
+        data: {
+          merchantId: merchant.id,
+          actor: "system:shopify-app-pricing",
+          action: "SUBSCRIPTION_REDIRECT_VERIFICATION_FAILED",
+          resourceType: "MERCHANT",
+          resourceId: merchant.id,
+          detailsJson: JSON.stringify({
+            planHandle: pricingPlanHandle.slice(0, 100),
+            reason: error instanceof Error ? error.message.slice(0, 200) : "UNKNOWN",
+          }),
+        },
+      });
+    }
+  }
   let preparationError: string | null = null;
   let preparationPending = false;
   try {

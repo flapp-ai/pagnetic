@@ -1,6 +1,6 @@
 # Adaptive Storefront Documentation
 
-Development update (2026-09-06): the owner authorized the adaptive scope in [doc60](./60-adaptive-storefront-prd.md), with Luna implementing under [doc63](./63-luna-development-brief.md) and milestones tracked in [doc64](./64-adaptive-development-status.md). Earlier contracts and verification below remain historical/implemented baselines, not evidence that the new scope is built. New protocol changes must be versioned and reviewed; no active registrations or production authority change through this notice.
+Development update (2026-09-07): [doc67](./67-shopify-submission-checkpoint.md) records the tested Shopify App Pricing migration, current English-listing state, reviewer screencast and exact remaining submission sequence. The owner authorized the adaptive scope in [doc60](./60-adaptive-storefront-prd.md), with Luna implementing under [doc63](./63-luna-development-brief.md) and milestones tracked in [doc64](./64-adaptive-development-status.md). Earlier contracts and verification below remain historical/implemented baselines, not evidence that the new scope is built. New protocol changes must be versioned and reviewed; no active registrations or production authority change through this notice.
 
 Status: Product-development baseline  
 Version: 0.7  

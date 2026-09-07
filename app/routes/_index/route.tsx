@@ -206,7 +206,7 @@ export default function Index() {
                 defaultValue={actionData?.submitted.productUrl}
               />
               <button disabled={scanning} type="submit">
-                {scanning ? "Reading product…" : "Create my free preview"}
+                {scanning ? "Reading product…" : "Create my preview"}
               </button>
             </div>
             <label htmlFor="campaignAdText">
