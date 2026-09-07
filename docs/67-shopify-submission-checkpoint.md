@@ -39,7 +39,7 @@ The receipt also confirms English as primary and limited App Store visibility: w
 - It explains the reviewer failure, confirmed webhook defect, narrowly guarded stale-session recovery, controlled forced-expiry test, current rendered routes, eight focused auth regressions, and the limitation that the reviewer store itself was not replayed.
 - Narration source: `docs/app-store-assets/reviewer-screencast-narration.txt`.
 - Reproducible builder: `scripts/build-review-screencast.swift`.
-- Local validation: the replacement MP4 is approximately 14 MB, duration `350.373333` seconds, contains H.264 video plus AAC narration, and has SHA-256 `71f3c66f135e65b50437e949e7c93f3eba080275389dfba96e96eb676a7b8903`. It is served at the unchanged URL `https://pagnetic.fly.dev/reviewer-6f2c9b31/pagnetic-shopify-review.mp4`, which is already saved in Shopify.
+- Local validation: the replacement MP4 is 14,899,893 bytes, duration `350.373333` seconds, contains H.264 video plus AAC narration, and has SHA-256 `71f3c66f135e65b50437e949e7c93f3eba080275389dfba96e96eb676a7b8903`. Media-only Fly deploy `deployment-01M1YT9M7DM4QQ905PJGK10G8G`, machine version 37, is healthy 1/1. A fresh full download from the unchanged submitted URL returned HTTP 200, `video/mp4`, byte ranges, the expected content length, and the identical SHA-256. The URL remains `https://pagnetic.fly.dev/reviewer-6f2c9b31/pagnetic-shopify-review.mp4`.
 
 ## Runtime pricing integration verified
 
