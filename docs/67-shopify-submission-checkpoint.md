@@ -1,6 +1,18 @@
 # Shopify submission checkpoint — 2026-09-07
 
-Status: SUBMITTED for Shopify review, verified live on 2026-09-07 at approximately 17:12 UTC. Shopify approval and published availability remain pending.
+Status: RESUBMITTED and IN REVIEW after targeted remediation, verified live on 2026-09-07. Shopify approval and published availability remain pending.
+
+## Reviewer runtime repair — 2026-09-07
+
+- Confirmed production failure: `APP_UNINSTALLED` and `SHOP_REDACT` returned HTTP 500 when Shopify's SDK attempted to refresh a revoked expiring offline token before invoking the webhook handler. Cleanup never ran, leaving stale reviewer sessions. This matches the SDK's known bare-500 invalid-refresh path.
+- Mandatory uninstall/privacy handlers now validate Shopify's raw-body HMAC without requesting Admin API credentials. Missing headers remain HTTP 400 and a tampered HMAC remains HTTP 401; no authentication bypass or blanket success fallback was added.
+- Embedded Admin authentication now has one bounded recovery attempt: only a bare HTTP 500, a cryptographically valid Shopify session token, a same-shop expired offline session with refresh credentials, and an exact compare-and-delete of the observed credential version can trigger removal and token exchange. Invalid JWTs, non-500 errors, unexpired sessions and concurrently refreshed records are preserved.
+- Every merchant-facing embedded route uses the guarded authenticator. The existing expiring-offline-token setting remains enabled.
+- Targeted auth tests pass 8/8, including real Shopify SDK signed-body/tampered-body validation, bounded retry, invalid-token preservation, unexpired-session preservation and compare-and-delete race behavior. TypeScript and the production build pass.
+- Commit `406429c` is pushed. Fly image `deployment-01M1YS0MED7PKXQVJF6RTA7Q36`, machine version 36, is started with 1/1 health check passing; `/healthz` returns HTTP 200.
+- Live recovery proof used only the owned development store, not the reviewer's shop: its offline credential was deliberately changed to expired invalid test markers, then a fresh Shopify Admin embedded request was opened. `/app` returned HTTP 200, the full Overview rendered, and Shopify token exchange replaced both markers with a new expiring credential. Messages also rendered after embedded navigation. No reviewer token, iframe URL or secret is retained in this document.
+- The original review-shop `/app` HTTP 500 cannot be replayed because Pagnetic does not control the reviewer session. The confirmed webhook defect and stale-session mechanism strongly explain the sequence, while the exact causal link to the reviewer's embedded error remains an evidence-backed inference rather than a claimed replay.
+- Both Shopify findings were marked resolved with the hosted reviewer walkthrough as visual proof. The feedback page changed to `2/2` and **Ready to resubmit**. After **Submit fixes**, Partner Dashboard changed to **In review**, **We're reviewing your response**, and **Success! We received your submission.** Review correspondence remains `bilgi@flapp.ist`; visibility remains limited to merchants with the direct URL after approval.
 
 ## Authoritative submission receipt
 
