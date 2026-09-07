@@ -357,6 +357,29 @@ test("provider selects the active price when Shopify retains an inactive prior v
   assert.equal((await provider.verify("billing-v2.myshopify.com")).state, "ACTIVE");
 });
 
+test("provider accepts only the configured zero-dollar test plan for an allowlisted dev store", async () => {
+  const provider = createShopifyAppPricingProviderV2({
+    shopId: "gid://shopify/Shop/8",
+    environment: {
+      ...partnerEnvironment,
+      SHOPIFY_APP_PRICING_TEST_PLAN_HANDLE: "shopify-test",
+    },
+    fetchImpl: async () => partnerResponse({
+      shop: { id: "gid://shopify/Shop/8", myshopifyDomain: "billing-v2.myshopify.com" },
+      billingPeriod: "EVERY_30_DAYS",
+      cancelAtEndOfCycle: false,
+      trialEndsAt: null,
+      currentBillingCycle: { startTime: "2026-09-07T00:00:00Z", endTime: "2026-10-07T00:00:00Z" },
+      items: [{
+        handle: "shopify-test",
+        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "0" },
+      }],
+      legacySubscriptionId: null,
+    }),
+  });
+  assert.equal((await provider.verify("billing-v2.myshopify.com")).state, "ACTIVE");
+});
+
 test("provider rejects no-charge subscriptions outside the explicit development-store allowlist", async () => {
   const provider = createShopifyAppPricingProviderV2({
     shopId: "gid://shopify/Shop/8",

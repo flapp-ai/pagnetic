@@ -135,6 +135,7 @@ export function createShopifyAppPricingProviderV2(args: {
     environment,
     "SHOPIFY_APP_PRICING_PLAN_HANDLE",
   );
+  const testPlanHandle = environment.SHOPIFY_APP_PRICING_TEST_PLAN_HANDLE?.trim() ?? "";
   const noChargeShops = new Set(
     (environment.SHOPIFY_APP_PRICING_NO_CHARGE_SHOPS ?? "")
       .split(",")
@@ -151,6 +152,8 @@ export function createShopifyAppPricingProviderV2(args: {
     throw new Error("SHOPIFY_APP_PRICING_ACCESS_TOKEN_INVALID");
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(planHandle))
     throw new Error("SHOPIFY_APP_PRICING_PLAN_HANDLE_INVALID");
+  if (testPlanHandle && !/^[A-Za-z0-9_-]{1,100}$/.test(testPlanHandle))
+    throw new Error("SHOPIFY_APP_PRICING_TEST_PLAN_HANDLE_INVALID");
   const fetchImpl = args.fetchImpl ?? fetch;
   const now = args.now ?? (() => new Date());
   const endpoint = `https://partners.shopify.com/${organizationId}/api/${PARTNER_API_VERSION}/graphql.json`;
@@ -269,7 +272,10 @@ export function createShopifyAppPricingProviderV2(args: {
       };
       if (active.billingPeriod !== "EVERY_30_DAYS")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_CADENCE_MISMATCH");
-      const matchingItems = items.filter((item) => item.handle === planHandle);
+      const allowedHandle = noChargeShops.has(shop) && testPlanHandle
+        ? [planHandle, testPlanHandle]
+        : [planHandle];
+      const matchingItems = items.filter((item) => allowedHandle.includes(item.handle));
       if (!matchingItems.length)
         throw new Error("SHOPIFY_APP_PRICING_OFFER_HANDLE_MISMATCH");
       // Shopify can retain an inactive prior price beside the current price when
@@ -281,10 +287,13 @@ export function createShopifyAppPricingProviderV2(args: {
         throw new Error("SHOPIFY_APP_PRICING_OFFER_INACTIVE");
       if (approvedItem.currency !== "USD")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_CURRENCY_MISMATCH");
-      if (
-        !decimalEquals(approvedItem.amount, "49.00") &&
-        !(decimalEquals(approvedItem.amount, "0.00") && noChargeShops.has(shop))
-      ) throw new Error("SHOPIFY_APP_PRICING_OFFER_AMOUNT_MISMATCH");
+      const approvedPublicPrice = approvedItem.handle === planHandle &&
+        decimalEquals(approvedItem.amount, "49.00");
+      const approvedTestPrice = noChargeShops.has(shop) &&
+        [planHandle, testPlanHandle].includes(approvedItem.handle) &&
+        decimalEquals(approvedItem.amount, "0.00");
+      if (!approvedPublicPrice && !approvedTestPrice)
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_AMOUNT_MISMATCH");
       const sourceHash = digest(material);
       const anyActiveItem = items.some((item) => item.active);
       return {
