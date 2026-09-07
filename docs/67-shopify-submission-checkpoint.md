@@ -5,12 +5,15 @@ Status: in progress. This is evidence for the current Shopify-controlled launch 
 ## Completed in Shopify
 
 - App: Pagnetic (`418274574337`), submission/client ID `a419293d1339cc23b5841538d18a1710`, Partner ID `5157971`.
-- English is the primary listing language. The Pagnetic icon, feature image and three distinct prepared desktop screenshots are present. The listing copy, support address, merchant-review address, submission address, Online Store requirement and three feature statements are saved.
+- English is the primary listing language. The Pagnetic icon and three distinct prepared desktop screenshots are present. The listing copy, support address, merchant-review address, submission address, Online Store requirement and three feature statements are saved. Shopify currently requires a replacement feature image; the corrected 1600x900 asset is prepared locally but not yet attached.
 - Public plan `founding-beta` is USD 49 every 30 days with a 30-day trial. Development stores are free to test.
-- The plan passed the owned development-store flow on `test1-eczm2zce.myshopify.com`: Shopify displayed `Free to test`, the owner-approved no-charge action completed, and Shopify redirected to `/app?plan_handle=founding-beta&charge_id=37160976690`.
+- The public plan passed the owned development-store selection flow on `test1-eczm2zce.myshopify.com`: Shopify displayed `Free to test`, the owner-approved no-charge action completed, and Shopify redirected to `/app?plan_handle=founding-beta&charge_id=37160976690`.
 - Shopify App Pricing is enabled. The migration page reports `Draft and test plans completed` and `App Pricing enabled completed`. Shopify also exposes its automatic private `shopify-test` plan.
-- The reviewer screencast URL is saved in the English listing. A fresh listing reload preserved it and reported no remaining required-field issue.
+- The private `shopify-test` plan is restricted to `test1-eczm2zce.myshopify.com`. Shopify approved its free charge (`37161206066`) and redirected to `/app?plan_handle=shopify-test`.
+- The reviewer screencast URL is saved in the English listing. A fresh listing reload preserved it.
 - Shopify's submission summary recognizes the `embedded` and `online store` capabilities. The common-error automated check now reports `Passed`.
+- Partner API client `35709` (`Pagnetic subscription verification`) was created with only `Manage apps`. Its token is stored only as encrypted Fly secret `SHOPIFY_PARTNER_API_TOKEN`; its value was not printed or committed.
+- Business and emergency contacts are saved with `bilgi@flapp.ist`, `support@flapp.ist`, and the approved emergency phone.
 
 ## Reviewer screencast
 
@@ -20,16 +23,19 @@ Status: in progress. This is evidence for the current Shopify-controlled launch 
 - Reproducible builder: `scripts/build-review-screencast.swift`.
 - Local validation: the final MP4 is 13 MB and contains video and audio tracks. It is deployed at `https://pagnetic.fly.dev/reviewer-6f2c9b31/pagnetic-shopify-review.mp4`; an independent HTTP check returned `200`, `video/mp4`, byte-range support and the expected content length. That URL is saved in Shopify.
 
-## Runtime pricing integration prepared
+## Runtime pricing integration verified
 
 - The installed Shopify app handle is `adaptive-storefront`; the hosted plan-selection route is `/charges/adaptive-storefront/pricing_plans`.
-- The production configuration is prepared for Partner ID `5157971`, App GID `gid://shopify/App/418274574337`, plan handle `founding-beta`, and the explicit no-charge allowlist `test1-eczm2zce.myshopify.com`.
+- The production configuration uses Partner ID `5157971`, App GID `gid://shopify/App/418274574337`, public plan handle `founding-beta`, private test handle `shopify-test`, and the explicit no-charge allowlist `test1-eczm2zce.myshopify.com`.
 - The `/app` loader now treats `plan_handle` as a verification trigger, checks it against the configured plan, queries Shopify's Partner API and persists only the server-verified subscription. A redirect parameter or charge ID alone never grants paid authority. Failures create an audit event and retain the safe existing entitlement.
-- Targeted subscription tests pass 9/9. TypeScript and the production application build pass.
+- Shopify's canonical Partner API verification succeeded and persisted `active` at `2026-09-07 08:07 UTC`; the current period ends `2026-10-07`.
+- The integration accepts the $0 private test contract only for the configured private handle and explicit development-store allowlist. Public stores must match the approved `founding-beta`, USD 49, every-30-days contract.
+- Targeted subscription tests pass 12/12. TypeScript and the production application build pass. Production deploy `deployment-01M1XEBHD4W1ZGCSQ68Y26RMQ2` reached healthy state with verified DNS; code is pushed through commit `ce716b4`.
 
 ## Remaining controlled sequence
 
-1. Create the prepared least-privilege Shopify Partner API client with only `Manage apps`, store its token as the encrypted Fly secret `SHOPIFY_PARTNER_API_TOKEN`, and roll the secret into the deployed build.
-2. Add the Partner account emergency-contact phone number, replace the feature image that Shopify flagged for pricing language, and remove the three duplicate screenshot uploads.
-3. Repeat the development-store plan redirect against the deployed verifier and confirm the authoritative subscription status.
-4. Complete the truthful final requirements review and submit the already owner-approved app for Shopify review. Record Shopify's returned status or exact rejection. Submission is not approval.
+1. Attach `docs/app-store-assets/00-feature-media-shopify-v2.png` as the required feature image and save the English listing. The three duplicate screenshots were removed; the three distinct screenshots remain.
+2. Re-open the submission summary, verify Shopify reports no remaining required-field issue, complete the truthful final requirements review, and submit the already owner-approved app for Shopify review.
+3. Record Shopify's returned status or exact rejection. Submission is not approval.
+
+The native macOS file chooser did not select the prepared feature asset through the available locked-session accessibility control. No unsupported file-input bypass was used. This is the sole presently observed submission blocker.
