@@ -337,6 +337,26 @@ test("provider accepts Shopify RFC3339 timestamps without fractional seconds", a
   assert.equal(source.periodEnd?.toISOString(), "2026-10-05T00:00:00.000Z");
 });
 
+test("provider selects the active price when Shopify retains an inactive prior version", async () => {
+  const provider = createShopifyAppPricingProviderV2({
+    shopId: "gid://shopify/Shop/8",
+    environment: partnerEnvironment,
+    fetchImpl: async () => partnerResponse({
+      shop: { id: "gid://shopify/Shop/8", myshopifyDomain: "billing-v2.myshopify.com" },
+      billingPeriod: "EVERY_30_DAYS",
+      cancelAtEndOfCycle: false,
+      trialEndsAt: "2026-10-05T00:00:00Z",
+      currentBillingCycle: null,
+      items: [
+        { handle: "founding_beta", price: { __typename: "FlatRatePrice", active: false, currency: "USD", amount: "39.00" } },
+        { handle: "founding_beta", price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "49.00" } },
+      ],
+      legacySubscriptionId: null,
+    }),
+  });
+  assert.equal((await provider.verify("billing-v2.myshopify.com")).state, "ACTIVE");
+});
+
 test("provider rejects no-charge subscriptions outside the explicit development-store allowlist", async () => {
   const provider = createShopifyAppPricingProviderV2({
     shopId: "gid://shopify/Shop/8",

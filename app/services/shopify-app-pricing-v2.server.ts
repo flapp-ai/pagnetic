@@ -269,9 +269,12 @@ export function createShopifyAppPricingProviderV2(args: {
       };
       if (active.billingPeriod !== "EVERY_30_DAYS")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_CADENCE_MISMATCH");
-      const approvedItem = items.find((item) => item.handle === planHandle);
-      if (!approvedItem)
+      const matchingItems = items.filter((item) => item.handle === planHandle);
+      if (!matchingItems.length)
         throw new Error("SHOPIFY_APP_PRICING_OFFER_HANDLE_MISMATCH");
+      // Shopify can retain an inactive prior price beside the current price when
+      // a plan is updated. Select the active version of the approved handle.
+      const approvedItem = matchingItems.find((item) => item.active) ?? matchingItems[0];
       if (approvedItem.type !== "FlatRatePrice")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_TYPE_MISMATCH");
       if (!approvedItem.active)
