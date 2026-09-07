@@ -3,10 +3,10 @@ import type { LoaderFunctionArgs } from "react-router";
 import prisma from "../db.server";
 import { actorKey, ensurePilotRole } from "../services/access.server";
 import { ensureMerchant } from "../services/governance.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   await ensurePilotRole({
     db: prisma,

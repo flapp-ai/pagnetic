@@ -3,11 +3,11 @@ import { Form, Link, useLoaderData } from "react-router";
 
 import prisma from "../db.server";
 import { ensureMerchant } from "../services/governance.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const url = new URL(request.url);
   const products = await prisma.product.findMany({

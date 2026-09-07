@@ -2,11 +2,11 @@ import type { LoaderFunctionArgs } from "react-router";
 import prisma from "../db.server";
 import { actorKey } from "../services/access.server";
 import { accessCustomerPrivacyArtifact } from "../services/customer-privacy-access.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 import { verifyShopifyAccountOwner } from "../services/shopify-owner-authority.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const part = new URL(request.url).searchParams.get("part") ?? "";
   if (!/^\d{1,4}$/.test(part)) return new Response("Unavailable", { status: 404 });
   try {

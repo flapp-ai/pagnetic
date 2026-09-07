@@ -3,13 +3,13 @@ import { data as routeData, Form, Link, redirect, useActionData, useLoaderData }
 import prisma from "../db.server";
 import { actorKey } from "../services/access.server";
 import { confirmCustomerPrivacyArtifactDelivery, customerPrivacyArtifactManifest } from "../services/customer-privacy-access.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 import { verifyShopifyAccountOwner } from "../services/shopify-owner-authority.server";
 import styles from "../styles/governance.module.css";
 import { readBoundedRequestText } from "../services/bounded-request.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const page = new URL(request.url).searchParams.get("page") ?? "0";
   if (!/^\d{1,2}$/.test(page)) throw new Response("Unavailable", { status: 404 });
   try {
@@ -22,7 +22,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   try {
     const ownerAuthority = await verifyShopifyAccountOwner({ request, shop: session.shop,
       subject: sessionToken.sub, tokenExpiresAt: sessionToken.exp });

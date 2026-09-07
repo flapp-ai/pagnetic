@@ -31,7 +31,7 @@ import {
   savePilotSettings,
   syncInstallationHealth,
 } from "../services/pilot-setup.server";
-import { apiVersion, authenticate } from "../shopify.server";
+import { apiVersion, authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 function contactConfigured(value: string | null | undefined) {
@@ -40,7 +40,7 @@ function contactConfigured(value: string | null | undefined) {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
   const currentRole = await ensurePilotRole({
@@ -162,7 +162,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
   const formData = await request.formData();

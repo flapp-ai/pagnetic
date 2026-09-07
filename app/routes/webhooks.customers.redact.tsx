@@ -5,10 +5,10 @@ import {
   privacySecret,
 } from "../services/privacy.server";
 import { processJournaledPrivacyWebhook } from "../services/privacy-receipt.server";
-import { authenticate } from "../shopify.server";
+import { authenticateWebhookWithoutAdmin } from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { payload, shop, webhookId, eventId, triggeredAt } = await authenticate.webhook(request);
+  const { payload, shop, webhookId, eventId, triggeredAt } = await authenticateWebhookWithoutAdmin(request);
   await processJournaledPrivacyWebhook({
     db,
     shop,

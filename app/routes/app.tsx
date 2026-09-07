@@ -3,11 +3,11 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { NavLink, Outlet, useLoaderData, useRouteError } from "react-router";
 
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  await authenticateAdmin(request);
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
 };
 

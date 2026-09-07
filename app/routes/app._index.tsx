@@ -55,11 +55,11 @@ import {
   reviseSelectedTestStoreV2CutoverProduct,
   V2_TEST_STORE_CUTOVER_ACTION,
 } from "../services/test-store-cutover.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session, sessionToken } = await authenticate.admin(request);
+  const { admin, session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
   await ensurePilotRole({ db: prisma, merchantId: merchant.id, actor });
@@ -290,7 +290,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, session, sessionToken } = await authenticate.admin(request);
+  const { admin, session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
   const formData = await request.formData();

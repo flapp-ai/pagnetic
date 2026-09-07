@@ -25,7 +25,7 @@ import {
   createAdaptivePackageReview,
   parseAdaptiveApprovedPackage,
 } from "../services/adaptive-package.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 function parseSource(value: string) {
@@ -40,7 +40,7 @@ function parseSource(value: string) {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   await ensurePilotRole({
     db: prisma,
@@ -157,7 +157,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
   const form = await request.formData();

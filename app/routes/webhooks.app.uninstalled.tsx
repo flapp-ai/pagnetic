@@ -3,10 +3,10 @@ import type { ActionFunctionArgs } from "react-router";
 import db from "../db.server";
 import { privacyHash, privacySecret } from "../services/privacy.server";
 import { disableMerchantAfterUninstall } from "../services/uninstall.server";
-import { authenticate } from "../shopify.server";
+import { authenticateWebhookWithoutAdmin } from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, shop } = await authenticate.webhook(request);
+  const { shop } = await authenticateWebhookWithoutAdmin(request);
   const merchant = await db.merchant.findUnique({ where: { shop } });
   if (merchant) {
     await disableMerchantAfterUninstall({
@@ -15,7 +15,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       shop,
       shopHash: privacyHash(privacySecret(), shop),
     });
-  } else if (session) {
+  } else {
     await db.session.deleteMany({ where: { shop } });
   }
 

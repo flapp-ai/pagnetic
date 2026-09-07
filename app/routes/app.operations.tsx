@@ -28,7 +28,7 @@ import { productionEnvironmentStatus } from "../services/pilot-setup.server";
 import { privacyHash } from "../services/privacy.server";
 import { privacyLookupKeys } from "../services/privacy-lookup-keys.server";
 import { customerPrivacyRequestSummary } from "../services/customer-privacy-queue.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 async function launchReadiness(merchantId: string, experimentId: string) {
@@ -185,7 +185,7 @@ async function launchReadiness(merchantId: string, experimentId: string) {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticate.admin(request);
+  const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
   const currentRole = await ensurePilotRole({
@@ -362,7 +362,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, session, sessionToken } = await authenticate.admin(request);
+  const { admin, session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const formData = await request.formData();
   const intent = String(formData.get("intent") ?? "");

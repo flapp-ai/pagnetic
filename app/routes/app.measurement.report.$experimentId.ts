@@ -6,10 +6,10 @@ import {
   renderExperimentReport,
 } from "../services/experiment-report.server";
 import { ensureMerchant } from "../services/governance.server";
-import { authenticate } from "../shopify.server";
+import { authenticateAdmin } from "../shopify.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const report = await loadExperimentReport({
     db: prisma,
