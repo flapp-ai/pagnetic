@@ -1,5 +1,9 @@
 # Pagnetic MVP v2 — implementation status
 
+## Post-remediation dependency handoff — 2026-09-07
+
+The two Shopify runtime findings have a deployed repair and current hosted proof; the response is in review. Section 17 of the executable PRD still prevents a design-partner-deployable declaration from test-store evidence alone. The next indispensable inputs are Shopify's decision and one nominated real merchant with a supported product and two or three actual ad messages/references. That nomination enables store-specific compatibility, consent/commerce, qualification and performance checks; these must not be replaced by the existing synthetic test store. The prepared 50-case human message-quality review also remains unscored at `docs/evaluation/message-quality-human-review-v1/cases.json` and needs owner judgment, not agent self-certification. No new pricing approval is requested. Public-acquisition/paid-continuation evidence is a later customer-learning gate, not a pending code package. Do not repeat broad audits or redeploy unchanged source while these inputs are absent.
+
 ## Current Shopify review remediation — 2026-09-07
 
 **IN_PROGRESS; launch readiness is not verified.** Shopify returned two runtime findings under requirements 2.1.3 and 2.1.1. The targeted repair is deployed and demonstrated on the owned development store. Both findings were marked resolved (`2/2`) and fixes were resubmitted; Partner Dashboard now reports **In review** and **Success! We received your submission.** Shopify approval/public availability remain pending.
