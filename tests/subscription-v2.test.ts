@@ -506,6 +506,42 @@ test("provider accepts only the configured zero-dollar test plan for an allowlis
   assert.equal((await provider.verify("billing-v2.myshopify.com")).state, "ACTIVE");
 });
 
+test("provider accepts Shopify's inactive effective $0 public-plan price only for an allowlisted dev store", async () => {
+  const contract = {
+    shop: { id: "gid://shopify/Shop/8", myshopifyDomain: "billing-v2.myshopify.com" },
+    billingPeriod: "EVERY_30_DAYS",
+    cancelAtEndOfCycle: false,
+    trialEndsAt: "2026-10-12T15:35:23Z",
+    currentBillingCycle: null,
+    items: [{
+      handle: "founding_beta",
+      price: { __typename: "FlatRatePrice", active: false, currency: "USD", amount: "0.0" },
+    }],
+    legacySubscriptionId: "gid://shopify/AppSubscription/37179097394",
+  };
+  const provider = createShopifyAppPricingProviderV2({
+    shopId: "gid://shopify/Shop/8",
+    environment: partnerEnvironment,
+    fetchImpl: async () => partnerResponse(contract),
+  });
+  const verified = await provider.verify("billing-v2.myshopify.com");
+  assert.equal(verified.state, "ACTIVE");
+  assert.equal(verified.periodEnd?.toISOString(), "2026-10-12T15:35:23.000Z");
+
+  const outsideAllowlist = createShopifyAppPricingProviderV2({
+    shopId: "gid://shopify/Shop/8",
+    environment: { ...partnerEnvironment, SHOPIFY_APP_PRICING_NO_CHARGE_SHOPS: "" },
+    fetchImpl: async () => partnerResponse({
+      ...contract,
+      shop: { ...contract.shop, myshopifyDomain: "public-v2.myshopify.com" },
+    }),
+  });
+  await assert.rejects(
+    outsideAllowlist.verify("public-v2.myshopify.com"),
+    /SHOPIFY_APP_PRICING_OFFER_INACTIVE/,
+  );
+});
+
 test("provider rejects no-charge subscriptions outside the explicit development-store allowlist", async () => {
   const provider = createShopifyAppPricingProviderV2({
     shopId: "gid://shopify/Shop/8",

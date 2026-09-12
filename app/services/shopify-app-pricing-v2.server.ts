@@ -280,31 +280,38 @@ export function createShopifyAppPricingProviderV2(args: {
         throw new Error("SHOPIFY_APP_PRICING_OFFER_HANDLE_MISMATCH");
       // Shopify can retain an inactive prior price beside the current price when
       // a plan is updated. Select the active version of the approved handle.
-      const approvedItem = matchingItems.find((item) => item.active) ?? matchingItems[0];
+      // For no-charge testing Shopify can instead expose one effective $0 price
+      // with `active: false` inside an authoritative activeSubscription. That
+      // narrow shape is accepted only for an explicitly allowlisted dev store.
+      const activeItems = items.filter((item) => item.active);
+      const approvedItem = matchingItems.find((item) => item.active) ??
+        (noChargeShops.has(shop) && activeItems.length === 0
+          ? matchingItems.find((item) => decimalEquals(item.amount, "0.00"))
+          : undefined) ??
+        matchingItems[0];
       if (approvedItem.type !== "FlatRatePrice")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_TYPE_MISMATCH");
-      if (!approvedItem.active)
-        throw new Error("SHOPIFY_APP_PRICING_OFFER_INACTIVE");
       if (approvedItem.currency !== "USD")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_CURRENCY_MISMATCH");
       const approvedPublicPrice = approvedItem.handle === planHandle &&
+        approvedItem.active &&
         decimalEquals(approvedItem.amount, "49.00");
       const approvedTestPrice = noChargeShops.has(shop) &&
         [planHandle, testPlanHandle].includes(approvedItem.handle) &&
+        (approvedItem.active || activeItems.length === 0) &&
         decimalEquals(approvedItem.amount, "0.00");
+      if (!approvedItem.active && !approvedTestPrice)
+        throw new Error("SHOPIFY_APP_PRICING_OFFER_INACTIVE");
       if (!approvedPublicPrice && !approvedTestPrice)
         throw new Error("SHOPIFY_APP_PRICING_OFFER_AMOUNT_MISMATCH");
       const sourceHash = digest(material);
-      const anyActiveItem = items.some((item) => item.active);
       return {
         shop,
         subscriptionId: typeof legacyId === "string"
           ? legacyId
           : `partner:${sourceHash}`,
         offerVersion: ACTIVE_OFFER_VERSION_V2,
-        state: !anyActiveItem
-          ? "FROZEN"
-          : active.cancelAtEndOfCycle
+        state: active.cancelAtEndOfCycle
             ? "CANCELLED"
             : "ACTIVE",
         sourceVersion: `partner-${PARTNER_API_VERSION}:${sourceHash}`,
