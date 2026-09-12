@@ -49,6 +49,14 @@ Final reviewer-UI source `637c48c37d1d2dd1ddff81c0c74927c5dbe49530` is pushed an
 
 ## Remaining owner and live-evidence gates
 
+### Post-release41 live UI verification
+
+On application source `637c48c37d1d2dd1ddff81c0c74927c5dbe49530`, the approved campaign message remains visible with its source evidence and exact experience-specific preview link. The real click opened experience `cmtyk0vc2002cq6lcdbrvwehx` with the expected pockets headline. Changing Device to Mobile retained the same experience ID and rendered the readable mobile-sized proposed panel. This verifies merchant preview, not actual mobile checkout or adaptive serving.
+
+Settings refreshed through Shopify at **2026-09-12 16:05UTC** and displayed confirmed access through **Oct12,2026**. View plans again navigated the top-level browser to Shopify's hosted pricing route. No reinstall, new charge, final video submission, or owner package approval was performed in these checks.
+
+### Pending actions
+
 1. Exact synthetic package approval is awaiting the owner's answer. Do not record the agent's QA inspection as owner sign-off.
 2. Shopify's uninstall modal explicitly warns of app-managed data deletion and a personal-customer-data deletion request within 48 hours. Requested action-time confirmation for test1 only; canceled the modal while awaiting the answer. No uninstall has occurred. The app's uninstall handler also invalidates the current plan and pixel credentials, pauses experiments, and clears sessions; recovery must use normal reinstall/setup, not stale entitlement restoration.
 3. Runtime read confirms `PAGNETIC_V2_ENABLED=false`, shadow=false, plan VERIFYING, no linked experiment and the scoped migration hold still active. This is not active adaptive serving. `ADAPTIVE_SERVING_ENABLED` is not used by the current serving path.
@@ -62,4 +70,4 @@ Final reviewer-UI source `637c48c37d1d2dd1ddff81c0c74927c5dbe49530` is pushed an
 - No real charges, unrelated stores, reviewer credential edits, fake revenue or synthetic video interfaces.
 - The previous screenshot slideshow did not meet requirement4.5.3. Do not substitute another screenshot slideshow or a technical-error explanation for an actual onboarding/configuration demonstration.
 - Keep production data, historical experiments, rollback controls and user files intact. A completed submission is not Shopify approval.
-- Chrome testing/recording/submission for Pagnetic was explicitly reauthorized. Concurrent Chrome activity was detected; coordinate exclusive access before native browser clicks or screen capture.
+- Chrome testing/recording/submission for Pagnetic was explicitly reauthorized. Concurrent Chrome activity was detected: use scoped tab controls and the explicit Pagnetic-only capture picker; do not capture the whole screen or operate unrelated task tabs.
