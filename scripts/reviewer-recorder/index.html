@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pagnetic reviewer recorder</title>
+    <style>
+      :root { color-scheme: light; font: 16px/1.45 system-ui, sans-serif; }
+      body { max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #17202a; }
+      .warning { padding: 1rem; border: 2px solid #b45309; border-radius: .5rem; background: #fff7ed; }
+      video { display: block; width: 100%; margin: 1rem 0; background: #111827; border-radius: .5rem; aspect-ratio: 16 / 9; }
+      button, a { display: inline-block; margin: .25rem .5rem .25rem 0; padding: .6rem .9rem; border: 1px solid #334155; border-radius: .4rem; background: #fff; color: inherit; font: inherit; cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: .5; }
+      #download { display: none; }
+      #status { min-height: 1.5em; }
+      code { background: #f1f5f9; padding: .1rem .3rem; border-radius: .2rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Pagnetic reviewer recording</h1>
+    <div class="warning">
+      <strong>Capture scope: Pagnetic Shopify tab only.</strong>
+      <p>When the browser picker opens, choose the tab showing the Pagnetic app. Do not select the entire screen, another tab, or a window. The picker is the browser’s security boundary; this page cannot bypass it.</p>
+    </div>
+    <p>This recorder keeps the stream in this tab and creates a local WebM file. It does not upload video, read page contents, log tokens, or request permissions beyond the browser’s tab-capture picker.</p>
+    <video id="preview" autoplay muted playsinline aria-label="Live preview of the selected tab"></video>
+    <button id="start" type="button">Start tab recording</button>
+    <button id="stop" type="button" disabled>Stop recording</button>
+    <a id="download" download="pagnetic-review.webm">Download recording</a>
+    <p id="status" role="status">Ready. Select the Pagnetic tab when prompted.</p>
+
+    <script>
+      (() => {
+        const preview = document.querySelector("#preview");
+        const start = document.querySelector("#start");
+        const stop = document.querySelector("#stop");
+        const download = document.querySelector("#download");
+        const status = document.querySelector("#status");
+        let stream;
+        let recorder;
+        let chunks = [];
+        let objectUrl;
+
+        function setStatus(message) { status.textContent = message; }
+
+        function releaseStream() {
+          if (stream) stream.getTracks().forEach((track) => track.stop());
+          stream = undefined;
+          preview.srcObject = null;
+        }
+
+        start.addEventListener("click", async () => {
+          download.style.display = "none";
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          objectUrl = undefined;
+          chunks = [];
+          try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+              video: { displaySurface: "browser", frameRate: { ideal: 30, max: 30 } },
+              audio: false,
+              preferCurrentTab: false,
+            });
+            const videoTrack = stream.getVideoTracks()[0];
+            if (!videoTrack || videoTrack.getSettings().displaySurface !== "browser") {
+              releaseStream();
+              setStatus("Tab-only capture was not confirmed. Choose the Pagnetic browser tab, not a window or entire screen.");
+              return;
+            }
+            preview.srcObject = stream;
+            preview.src = "";
+            preview.controls = false;
+            preview.muted = true;
+            const mimeType = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]
+              .find((candidate) => MediaRecorder.isTypeSupported(candidate));
+            recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            recorder.addEventListener("dataavailable", (event) => {
+              if (event.data.size) chunks.push(event.data);
+            });
+            recorder.addEventListener("stop", () => {
+              const blob = new Blob(chunks, { type: recorder.mimeType || "video/webm" });
+              objectUrl = URL.createObjectURL(blob);
+              preview.srcObject = null;
+              preview.src = objectUrl;
+              preview.controls = true;
+              preview.muted = false;
+              download.href = objectUrl;
+              download.download = `pagnetic-review-${new Date().toISOString().replace(/[:.]/g, "-")}.webm`;
+              download.style.display = "inline-block";
+              setStatus("Recording stopped. Review the preview and download the local WebM when ready.");
+              releaseStream();
+              start.disabled = false;
+              stop.disabled = true;
+            });
+            videoTrack.addEventListener("ended", () => {
+              if (recorder && recorder.state === "recording") recorder.stop();
+            }, { once: true });
+            recorder.start(1000);
+            start.disabled = true;
+            stop.disabled = false;
+            setStatus("Recording the selected tab. The live preview is the captured stream.");
+          } catch (error) {
+            releaseStream();
+            setStatus(error && error.name === "NotAllowedError"
+              ? "Capture was cancelled or denied. No recording was created."
+              : `Could not start tab capture (${error?.name || "unknown error"}). Make this recorder tab active in Chrome and retry. No recording was created.`);
+          }
+        });
+
+        stop.addEventListener("click", () => {
+          if (!recorder || recorder.state === "inactive") return;
+          recorder.stop();
+          start.disabled = false;
+          stop.disabled = true;
+        });
+      })();
+    </script>
+  </body>
+</html>

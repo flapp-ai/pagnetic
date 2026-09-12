@@ -72,3 +72,21 @@ test("active state at or beyond provider end is expired", () => {
   assert.equal(result.requiresReapproval, true);
   assert.match(result.heading, /Expired/);
 });
+
+test("scheduled cancellation at its exact provider end is expired", () => {
+  const result = subscriptionPresentation(
+    { status: "CANCEL_AT_PERIOD_END", periodEnd: "2026-10-12T00:00:00Z" },
+    new Date("2026-10-12T00:00:00Z"),
+  );
+  assert.equal(result.requiresReapproval, true);
+  assert.equal(result.heading, "Expired — reapproval required");
+});
+
+test("scheduled cancellation after its provider end is expired", () => {
+  const result = subscriptionPresentation(
+    { status: "CANCEL_AT_PERIOD_END", periodEnd: "2026-10-12T00:00:00Z" },
+    new Date("2026-10-13T00:00:00Z"),
+  );
+  assert.equal(result.requiresReapproval, true);
+  assert.match(result.heading, /Expired/);
+});

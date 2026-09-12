@@ -8,6 +8,7 @@ import {
 } from "react-router";
 
 import { AdaptivePackageReviewPanel } from "../components/adaptive-package-review";
+import { approvedMessageSummaries, previewExperienceHref } from "../services/approved-message-presentation";
 
 import prisma from "../db.server";
 import { actorKey, ensurePilotRole, requirePilotRole } from "../services/access.server";
@@ -281,6 +282,7 @@ export function MessagesView({
   busy: boolean;
 }) {
   const draft = data.experiences.find((experience) => experience.status === "DRAFT");
+  const approvedMessages = approvedMessageSummaries(data.experiences, data.product?.id ?? "");
   const adaptiveReview = data.packageReview?.package ?? null;
   return (
     <main className={styles.page}>
@@ -349,7 +351,7 @@ export function MessagesView({
         <section className={styles.section}>
           <div className={styles.sectionHeading}>
             <div><p className={styles.step}>Review</p><h2>Exact proposed message</h2></div>
-            <Link className={styles.secondaryButton} to={`/app/preview?productId=${encodeURIComponent(data.product.id)}`}>Preview in context</Link>
+            <Link className={styles.secondaryButton} to={previewExperienceHref(data.product.id, draft.id)}>Preview in context</Link>
           </div>
           <div className={styles.reviewSplit}>
             <article className={styles.panelPreview}>
@@ -396,10 +398,40 @@ export function MessagesView({
           </Form>
         </details>
       ) : null}
-      {data.experiences.some((experience) => experience.status === "APPROVED_ACTIVE") ? (
+      {approvedMessages.length ? (
         <section className={styles.section}>
           <h2>Approved messages</h2>
           <p>Approved message versions are immutable. A separate package review freezes the exact campaign mappings, text, evidence and experiment question.</p>
+          <div className={styles.versionList}>
+            {approvedMessages.map((experience) => (
+              <article className={styles.versionCard} key={experience.id}>
+                <div className={styles.cardHeader}>
+                  <div>
+                    <p className={styles.step}>{experience.angle}</p>
+                    <h3>{experience.headline}</h3>
+                    {experience.supportingLine ? <p>{experience.supportingLine}</p> : null}
+                  </div>
+                  <span className={styles.statusBadge} data-status="READY">APPROVED</span>
+                </div>
+                <ul>
+                  {experience.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}
+                </ul>
+                {experience.reassurance ? <p>{experience.reassurance}</p> : null}
+                <details>
+                  <summary>View exact sources</summary>
+                  {experience.claims.map((claim) => (
+                    <div className={styles.sourceTrace} key={claim.text}>
+                      <strong>{claim.text}</strong>
+                      {claim.sources.map((source) => <blockquote key={source}>{source}</blockquote>)}
+                    </div>
+                  ))}
+                </details>
+                <Link className={styles.secondaryButton} to={experience.previewHref}>
+                  Preview in context
+                </Link>
+              </article>
+            ))}
+          </div>
           <Link className={styles.primaryButton} to="/app">Review test readiness</Link>
           {data.product ? <Form method="post"><input name="intent" type="hidden" value="prepare-adaptive-package" /><input name="productId" type="hidden" value={data.product.id} /><button className={styles.secondaryButton} disabled={busy} type="submit">Prepare adaptive package for review</button></Form> : null}
           {adaptiveReview ? (

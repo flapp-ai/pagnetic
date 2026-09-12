@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "react-router";
 import { Form, Link, useLoaderData } from "react-router";
 
 import prisma from "../db.server";
+import { selectRequestedExperience } from "../services/approved-message-presentation";
 import { ensureMerchant } from "../services/governance.server";
 import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
@@ -16,12 +17,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     select: { id: true, title: true },
   });
   const requestedProduct = url.searchParams.get("productId") ?? products[0]?.id;
+  const requestedExperience = url.searchParams.get("experienceId");
   const product = requestedProduct
     ? await prisma.product.findFirst({
         where: { id: requestedProduct, merchantId: merchant.id },
         include: {
           experiences: {
-            where: { status: { in: ["DRAFT", "APPROVED_ACTIVE"] } },
+            // Stale drafts/approvals must never be previewable.
+            where: { status: { in: ["DRAFT", "APPROVED_ACTIVE"] }, staleAt: null },
             include: {
               angle: true,
               claims: {
@@ -34,12 +37,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       })
     : null;
   const angle = url.searchParams.get("angle") ?? "universal";
-  const selected =
-    product?.experiences.find(
+  const selected = selectRequestedExperience(
+    product?.experiences ?? [],
+    requestedExperience,
+    () => product?.experiences.find(
       (experience) => (experience.angle?.key ?? "universal") === angle,
-    ) ??
-    product?.experiences[0] ??
-    null;
+    ) ?? product?.experiences[0] ?? null,
+  );
   let productSource: {
     description?: string;
     featuredImage?: { url?: string; altText?: string | null } | null;
@@ -66,6 +70,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       : null,
     angles:
       product?.experiences.map((experience) => ({
+        id: experience.id,
         key: experience.angle?.key ?? "universal",
         label: experience.angle?.label ?? "Universal",
       })) ?? [],
@@ -90,6 +95,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       : null,
     device: url.searchParams.get("device") === "mobile" ? "mobile" : "desktop",
     selectedAngle: selected?.angle?.key ?? (selected ? "universal" : angle),
+    selectedExperienceId: selected?.id ?? null,
   };
 };
 
@@ -124,10 +130,10 @@ export default function ExperiencePreview() {
           </label>
           <label>
             Experience
-            <select defaultValue={data.selectedAngle} name="angle">
-              {data.angles.map((angle) => (
-                <option key={angle.key} value={angle.key}>
-                  {angle.label}
+            <select defaultValue={data.selectedExperienceId ?? ""} name="experienceId">
+              {data.angles.map((experience) => (
+                <option key={experience.id} value={experience.id}>
+                  {experience.label}
                 </option>
               ))}
             </select>

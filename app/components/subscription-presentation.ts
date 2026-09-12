@@ -40,7 +40,7 @@ export function subscriptionPresentation(
     ? dateLabel(subscription.cancellationAt)
     : null;
 
-  if (status === "ACTIVE" && expired) {
+  if ((status === "ACTIVE" || status === "CANCEL_AT_PERIOD_END") && expired) {
     return {
       heading: "Expired — reapproval required",
       detail: `Shopify's last confirmed access date was ${date ?? "unavailable"}. Review the plan before continuing.`,

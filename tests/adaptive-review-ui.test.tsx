@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createMemoryRouter, RouterProvider } from "react-router";
 
 import { AdaptivePackageReviewPanel } from "../app/components/adaptive-package-review";
+import { approvedMessageSummaries, previewExperienceHref, selectRequestedExperience } from "../app/services/approved-message-presentation";
 import { ADAPTIVE_EXPERIMENT_QUESTIONS } from "../app/services/adaptive-contracts";
 
 test("owner review renders exact bundle, mapping, protocol, coverage and authority hashes before approval", () => {
@@ -65,4 +66,30 @@ test("owner review renders exact bundle, mapping, protocol, coverage and authori
     "1/2 active mappings",
   ]) assert.ok(html.includes(exact), `missing exact review value: ${exact}`);
   assert.ok(html.includes("Approve this exact adaptive package"));
+});
+
+test("approved campaign message remains available with a product preview target", () => {
+  const approved = approvedMessageSummaries([
+    {
+      id: "experience-1", status: "APPROVED_ACTIVE", angle: "Universal",
+      headline: "Keep cables organized", supportingLine: "A simple place for travel essentials.",
+      benefits: ["Two internal pockets separate cables and adapters."], reassurance: "Synthetic QA only.",
+      claims: [{ text: "Two internal pockets separate cables and adapters.", sources: ["Two internal pockets separate cables and adapters."] }],
+    },
+    {
+      id: "draft-1", status: "DRAFT", angle: "Universal", headline: "Draft", supportingLine: null,
+      benefits: [], reassurance: null, claims: [],
+    },
+  ], "product-1");
+  assert.equal(approved.length, 1);
+  assert.equal(approved[0].headline, "Keep cables organized");
+  assert.equal(approved[0].claims[0].sources[0], "Two internal pockets separate cables and adapters.");
+  assert.equal(approved[0].previewHref, "/app/preview?productId=product-1&experienceId=experience-1");
+});
+
+test("preview selection is product-scoped, fails closed for missing IDs, and encodes targets", () => {
+  const experiences = [{ id: "experience/one" }, { id: "other" }];
+  assert.equal(selectRequestedExperience(experiences, "missing", () => experiences[0]), null);
+  assert.equal(selectRequestedExperience(experiences, "other", () => experiences[0])?.id, "other");
+  assert.equal(previewExperienceHref("product/one", "experience/one"), "/app/preview?productId=product%2Fone&experienceId=experience%2Fone");
 });
