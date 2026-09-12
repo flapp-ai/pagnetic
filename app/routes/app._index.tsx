@@ -64,10 +64,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const actor = actorKey(session.shop, sessionToken.sub);
   await ensurePilotRole({ db: prisma, merchantId: merchant.id, actor });
   const pricingPlanHandle = new URL(request.url).searchParams.get("plan_handle");
-  if (pricingPlanHandle) {
+  const providerConfigured = [
+    process.env.SHOPIFY_PARTNER_ORGANIZATION_ID,
+    process.env.SHOPIFY_PARTNER_API_TOKEN,
+    process.env.SHOPIFY_PARTNER_APP_ID,
+    process.env.SHOPIFY_APP_PRICING_PLAN_HANDLE,
+  ].every((value) => Boolean(value?.trim()));
+  // Refresh on every authenticated app entry, not only when Shopify appends a
+  // plan_handle after approval. Declines, reinstalls and lifecycle changes can
+  // otherwise leave a stale ACTIVE row visible and usable indefinitely.
+  if (providerConfigured) {
     try {
-      if (pricingPlanHandle !== process.env.SHOPIFY_APP_PRICING_PLAN_HANDLE)
-        throw new Error("SHOPIFY_APP_PRICING_REDIRECT_PLAN_MISMATCH");
       const shopId = await loadShopifyShopIdV2((query) => admin.graphql(query));
       await verifySubscriptionV2({
         db: prisma,
@@ -83,8 +90,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           resourceType: "MERCHANT",
           resourceId: merchant.id,
           detailsJson: JSON.stringify({
-            planHandle: pricingPlanHandle.slice(0, 100),
+            refreshTrigger: pricingPlanHandle ? "PLAN_REDIRECT" : "APP_ENTRY",
             reason: error instanceof Error ? error.message.slice(0, 200) : "UNKNOWN",
+          }),
+        },
+      });
+    }
+  }
+  if (pricingPlanHandle) {
+    const allowedRedirectHandles = new Set([
+      process.env.SHOPIFY_APP_PRICING_PLAN_HANDLE,
+      process.env.SHOPIFY_APP_PRICING_TEST_PLAN_HANDLE,
+    ].map((value) => value?.trim()).filter(Boolean));
+    if (!allowedRedirectHandles.has(pricingPlanHandle)) {
+      await prisma.auditLog.create({
+        data: {
+          merchantId: merchant.id,
+          actor: "system:shopify-app-pricing",
+          action: "SUBSCRIPTION_REDIRECT_HANDLE_REJECTED",
+          resourceType: "MERCHANT",
+          resourceId: merchant.id,
+          detailsJson: JSON.stringify({
+            planHandle: pricingPlanHandle.slice(0, 100),
           }),
         },
       });

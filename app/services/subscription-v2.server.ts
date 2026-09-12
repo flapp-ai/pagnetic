@@ -87,8 +87,13 @@ export function mapProviderSubscriptionStateV2(args: {
   now: Date;
 }): SubscriptionStatusV2 {
   const state = args.state.trim().toUpperCase();
-  if (state === "NO_ACTIVE_SUBSCRIPTION") return "FREE_EVALUATION";
-  if (state === "ACTIVE") return "ACTIVE";
+  // A Shopify App Pricing trial starts only after the merchant approves the
+  // hosted plan. Absence of a verified contract must therefore never create a
+  // local evaluation entitlement (including after a decline or reinstall).
+  if (state === "NO_ACTIVE_SUBSCRIPTION") return "CANCELED";
+  if (state === "ACTIVE") {
+    return args.periodEnd && args.periodEnd > args.now ? "ACTIVE" : "EXPIRED";
+  }
   if (["PENDING", "PENDING_APPROVAL"].includes(state)) return "PENDING_APPROVAL";
   if (state === "FROZEN") return "FROZEN";
   if (state === "EXPIRED") return "EXPIRED";
@@ -105,7 +110,11 @@ export function subscriptionAllowsApprovedServingV2(args: {
   periodEnd: Date | null;
   now: Date;
 }) {
-  if (args.status === "ACTIVE") return true;
+  // Provider refresh can fail after a previously verified contract expires.
+  // Bound even ACTIVE cache entries to Shopify's last verified trial/cycle end.
+  if (args.status === "ACTIVE") {
+    return Boolean(args.periodEnd && args.periodEnd > args.now);
+  }
   if (args.status === "FREE_EVALUATION") {
     return args.periodEnd == null || args.periodEnd > args.now;
   }

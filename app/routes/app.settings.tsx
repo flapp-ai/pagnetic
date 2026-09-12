@@ -18,17 +18,39 @@ import {
   offerCatalogV2,
   verifySubscriptionV2,
 } from "../services/subscription-v2.server";
+import { subscriptionPresentation } from "../components/subscription-presentation";
 import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, sessionToken } = await authenticateAdmin(request);
+  const { admin, session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   await ensurePilotRole({
     db: prisma,
     merchantId: merchant.id,
     actor: actorKey(session.shop, sessionToken.sub),
   });
+  const providerConfigured = [
+    process.env.SHOPIFY_PARTNER_ORGANIZATION_ID,
+    process.env.SHOPIFY_PARTNER_API_TOKEN,
+    process.env.SHOPIFY_PARTNER_APP_ID,
+    process.env.SHOPIFY_APP_PRICING_PLAN_HANDLE,
+  ].every((value) => Boolean(value?.trim()));
+  let providerRefreshFailed = false;
+  if (providerConfigured) {
+    try {
+      const shopId = await loadShopifyShopIdV2((query) => admin.graphql(query));
+      await verifySubscriptionV2({
+        db: prisma,
+        merchantId: merchant.id,
+        provider: createShopifyAppPricingProviderV2({ shopId }),
+      });
+    } catch {
+      // Keep settings renderable during a transient Partner API outage, but do
+      // not present the persisted subscription as currently verified.
+      providerRefreshFailed = true;
+    }
+  }
   const [runtime, subscription, settings, plan, qa, incidents] = await Promise.all([
     prisma.runtimeControl.findUnique({ where: { merchantId: merchant.id } }),
     prisma.subscriptionState.findUnique({ where: { merchantId: merchant.id } }),
@@ -62,12 +84,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const currentOffer = subscription
     ? offers.find((offer) => offer.version === subscription.offerVersion) ?? null
     : offers.find((offer) => offer.version === ACTIVE_OFFER_VERSION_V2) ?? null;
-  const providerConfigured = [
-    process.env.SHOPIFY_PARTNER_ORGANIZATION_ID,
-    process.env.SHOPIFY_PARTNER_API_TOKEN,
-    process.env.SHOPIFY_PARTNER_APP_ID,
-    process.env.SHOPIFY_APP_PRICING_PLAN_HANDLE,
-  ].every((value) => Boolean(value?.trim()));
   let pricingUrl: string | null = null;
   if (currentOffer?.publishable && process.env.SHOPIFY_APP_HANDLE) {
     try {
@@ -83,13 +99,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     shop: session.shop,
     paused: Boolean(runtime?.killSwitch) || plan?.state === "PAUSED",
     plan,
-    subscription: subscription
+    subscription: !providerConfigured || providerRefreshFailed
+      ? {
+          status: subscription?.authoritativeStatus === "FREE_EVALUATION"
+            ? "FREE_EVALUATION"
+            : "VERIFICATION_UNAVAILABLE",
+          offerVersion: subscription?.offerVersion ?? ACTIVE_OFFER_VERSION_V2,
+          verifiedAt: null,
+          periodEnd: null,
+          cancellationAt: null,
+          providerVerified: false,
+        }
+      : subscription
       ? {
           status: subscription.authoritativeStatus,
           offerVersion: subscription.offerVersion,
           verifiedAt: subscription.verifiedAt?.toISOString() ?? null,
           periodEnd: subscription.periodEnd?.toISOString() ?? null,
           cancellationAt: subscription.cancellationAt?.toISOString() ?? null,
+          providerVerified: true,
         }
       : null,
     offer: currentOffer,
@@ -175,6 +203,7 @@ export function SettingsView({
   result: ReturnType<typeof useActionData<typeof action>>;
   busy: boolean;
 }) {
+  const subscriptionSummary = subscriptionPresentation(data.subscription);
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -200,18 +229,19 @@ export function SettingsView({
       </section>
       <section className={styles.section}>
         <p className={styles.step}>Subscription</p>
-        <h2>{data.subscription?.status.replaceAll("_", " ").toLowerCase() ?? "Free evaluation"}</h2>
+        <h2>{subscriptionSummary.heading}</h2>
         {data.offer ? <p><strong>{data.offer.name} · ${data.offer.priceUsdMonthly}/month</strong><br />{data.offer.evaluation}</p> : null}
+        <p role="status">{subscriptionSummary.detail}</p>
         <p>
           {data.subscription?.verifiedAt
             ? `Shopify status last verified ${data.subscription.verifiedAt.slice(0, 16).replace("T", " ")} UTC.`
             : "No paid Shopify subscription has been verified. A favorable experiment result is never payment authorization."}
         </p>
-        {data.subscription?.periodEnd ? <p>Current period ends {data.subscription.periodEnd.slice(0, 10)}.</p> : null}
-        {data.subscription?.cancellationAt ? <p>Cancellation recorded for {data.subscription.cancellationAt.slice(0, 10)}.</p> : null}
+        {data.subscription?.periodEnd && subscriptionSummary.date ? <p>Provider-confirmed date: {subscriptionSummary.date}.</p> : null}
+        {data.subscription?.cancellationAt && !subscriptionSummary.date ? <p>Shopify recorded a cancellation event; the access end date is unavailable.</p> : null}
         {!data.offer?.publishable ? <p>New paid enrollment is not published. Pagnetic will not create a charge until Shopify billing and the offer launch gate are both explicitly enabled.</p> : null}
         {data.providerConfigured ? <Form method="post"><input name="intent" type="hidden" value="verifySubscription" /><button className={styles.secondaryButton} disabled={busy} type="submit">Verify status with Shopify</button></Form> : <p>Shopify Partner API verification is not configured. Serving remains limited by the stored evaluation authority.</p>}
-        {data.pricingUrl ? <a className={styles.primaryButton} href={data.pricingUrl}>View plans in Shopify</a> : null}
+        {data.pricingUrl ? <a className={styles.primaryButton} href={data.pricingUrl} target="_top" rel="noreferrer">{subscriptionSummary.requiresReapproval ? "Review or reapprove plan" : "View plans in Shopify"}</a> : null}
       </section>
       <section className={styles.section}>
         <div className={styles.sectionHeading}><div><p className={styles.step}>Supported surfaces</p><h2>Evidence, not assumptions</h2></div></div>

@@ -70,7 +70,20 @@ test("new pricing remains unpublished unless both commercial flags are explicit"
 
 test("provider states map explicitly and cancellation retains only its paid-through window", () => {
   const now = new Date("2026-09-05T00:00:00.000Z");
-  assert.equal(mapProviderSubscriptionStateV2({ state: "ACTIVE", now }), "ACTIVE");
+  assert.equal(mapProviderSubscriptionStateV2({
+    state: "ACTIVE",
+    periodEnd: new Date("2026-09-06T00:00:00.000Z"),
+    now,
+  }), "ACTIVE");
+  assert.equal(mapProviderSubscriptionStateV2({
+    state: "ACTIVE",
+    periodEnd: new Date("2026-09-04T00:00:00.000Z"),
+    now,
+  }), "EXPIRED");
+  assert.equal(mapProviderSubscriptionStateV2({
+    state: "NO_ACTIVE_SUBSCRIPTION",
+    now,
+  }), "CANCELED");
   assert.equal(mapProviderSubscriptionStateV2({ state: "DECLINED", now }), "CANCELED");
   assert.equal(mapProviderSubscriptionStateV2({
     state: "CANCELLED",
@@ -78,6 +91,11 @@ test("provider states map explicitly and cancellation retains only its paid-thro
     now,
   }), "CANCEL_AT_PERIOD_END");
   assert.equal(mapProviderSubscriptionStateV2({ state: "unexpected", now }), "FROZEN");
+  assert.equal(subscriptionAllowsApprovedServingV2({
+    status: "ACTIVE",
+    periodEnd: new Date("2026-09-04T00:00:00.000Z"),
+    now,
+  }), false);
   assert.equal(subscriptionAllowsApprovedServingV2({
     status: "CANCEL_AT_PERIOD_END",
     periodEnd: new Date("2026-09-06T00:00:00.000Z"),
@@ -164,6 +182,7 @@ test("same-watermark conflicting provider facts freeze access without selecting 
         state,
         sourceVersion: `event-${state}`,
         updatedAt,
+        periodEnd: new Date("2026-10-05T00:30:00.000Z"),
       }),
     });
     await verifySubscriptionV2({
@@ -183,6 +202,60 @@ test("same-watermark conflicting provider facts freeze access without selecting 
       await fixture.db.auditLog.count({ where: { action: "SUBSCRIPTION_SOURCE_CONFLICT" } }),
       1,
     );
+  } finally {
+    await fixture.close();
+  }
+});
+
+test("a canonical no-contract refresh revokes stale active state after decline or reinstall", async () => {
+  const fixture = testDatabase();
+  try {
+    const merchant = await fixture.db.merchant.create({
+      data: { shop: "subscription-reinstall.myshopify.com" },
+    });
+    const activeAt = new Date("2026-09-05T00:30:00.000Z");
+    await verifySubscriptionV2({
+      db: fixture.db,
+      merchantId: merchant.id,
+      provider: {
+        verify: async () => ({
+          shop: merchant.shop,
+          subscriptionId: "gid://shopify/AppSubscription/3",
+          offerVersion: ACTIVE_OFFER_VERSION_V2,
+          state: "ACTIVE",
+          sourceVersion: "partner-active",
+          updatedAt: activeAt,
+          periodEnd: new Date("2026-10-05T00:30:00.000Z"),
+        }),
+      },
+      now: activeAt,
+    });
+    const refreshedAt = new Date("2026-09-12T00:30:00.000Z");
+    const revoked = await verifySubscriptionV2({
+      db: fixture.db,
+      merchantId: merchant.id,
+      provider: {
+        verify: async () => ({
+          shop: merchant.shop,
+          subscriptionId: null,
+          offerVersion: ACTIVE_OFFER_VERSION_V2,
+          state: "NO_ACTIVE_SUBSCRIPTION",
+          sourceVersion: "partner-no-active",
+          updatedAt: refreshedAt,
+          periodEnd: null,
+          cancellationAt: null,
+        }),
+      },
+      now: refreshedAt,
+    });
+    assert.equal(revoked.authoritativeStatus, "CANCELED");
+    assert.equal(revoked.externalSubscriptionIdentity, null);
+    assert.equal(revoked.periodEnd, null);
+    assert.equal(subscriptionAllowsApprovedServingV2({
+      status: revoked.authoritativeStatus,
+      periodEnd: revoked.periodEnd,
+      now: refreshedAt,
+    }), false);
   } finally {
     await fixture.close();
   }
@@ -245,7 +318,7 @@ test("Shopify App Pricing provider verifies an active or no-charge contract with
   );
 });
 
-test("missing active contract preserves the bounded free evaluation and provider failures fail closed", async () => {
+test("missing active contract grants no unapproved trial and provider failures fail closed", async () => {
   const observedAt = new Date("2026-09-05T04:00:00.000Z");
   const provider = createShopifyAppPricingProviderV2({
     shopId: "gid://shopify/Shop/8",
@@ -256,7 +329,12 @@ test("missing active contract preserves the bounded free evaluation and provider
   const source = await provider.verify("free-v2.myshopify.com");
   assert.equal(source.state, "NO_ACTIVE_SUBSCRIPTION");
   assert.equal(source.offerVersion, ACTIVE_OFFER_VERSION_V2);
-  assert.equal(mapProviderSubscriptionStateV2({ state: source.state, now: observedAt }), "FREE_EVALUATION");
+  assert.equal(mapProviderSubscriptionStateV2({ state: source.state, now: observedAt }), "CANCELED");
+  assert.equal(subscriptionAllowsApprovedServingV2({
+    status: mapProviderSubscriptionStateV2({ state: source.state, now: observedAt }),
+    periodEnd: source.periodEnd ?? null,
+    now: observedAt,
+  }), false);
 
   const graphqlFailure = createShopifyAppPricingProviderV2({
     shopId: "gid://shopify/Shop/8",
@@ -335,6 +413,54 @@ test("provider accepts Shopify RFC3339 timestamps without fractional seconds", a
   const source = await provider.verify("dev-v2.myshopify.com");
   assert.equal(source.state, "ACTIVE");
   assert.equal(source.periodEnd?.toISOString(), "2026-10-05T00:00:00.000Z");
+  assert.equal(mapProviderSubscriptionStateV2({
+    state: source.state,
+    periodEnd: source.periodEnd,
+    now: new Date("2026-09-12T00:00:00.000Z"),
+  }), "ACTIVE");
+});
+
+test("provider retains a scheduled cancellation only through Shopify's verified cycle end", async () => {
+  const provider = createShopifyAppPricingProviderV2({
+    shopId: "gid://shopify/Shop/8",
+    environment: partnerEnvironment,
+    now: () => new Date("2026-09-12T00:00:00.000Z"),
+    fetchImpl: async () => partnerResponse({
+      shop: { id: "gid://shopify/Shop/8", myshopifyDomain: "paid-through.myshopify.com" },
+      billingPeriod: "EVERY_30_DAYS",
+      cancelAtEndOfCycle: true,
+      trialEndsAt: null,
+      currentBillingCycle: {
+        startTime: "2026-09-01T00:00:00Z",
+        endTime: "2026-10-01T00:00:00Z",
+      },
+      items: [{
+        handle: "founding_beta",
+        price: { __typename: "FlatRatePrice", active: true, currency: "USD", amount: "49.00" },
+      }],
+      legacySubscriptionId: null,
+    }),
+  });
+  const source = await provider.verify("paid-through.myshopify.com");
+  assert.equal(source.state, "CANCELLED");
+  assert.equal(source.periodEnd?.toISOString(), "2026-10-01T00:00:00.000Z");
+  assert.equal(source.cancellationAt?.toISOString(), "2026-10-01T00:00:00.000Z");
+  const status = mapProviderSubscriptionStateV2({
+    state: source.state,
+    periodEnd: source.periodEnd,
+    now: new Date("2026-09-12T00:00:00.000Z"),
+  });
+  assert.equal(status, "CANCEL_AT_PERIOD_END");
+  assert.equal(subscriptionAllowsApprovedServingV2({
+    status,
+    periodEnd: source.periodEnd ?? null,
+    now: new Date("2026-09-30T23:59:59.000Z"),
+  }), true);
+  assert.equal(subscriptionAllowsApprovedServingV2({
+    status,
+    periodEnd: source.periodEnd ?? null,
+    now: new Date("2026-10-01T00:00:00.000Z"),
+  }), false);
 });
 
 test("provider selects the active price when Shopify retains an inactive prior version", async () => {
