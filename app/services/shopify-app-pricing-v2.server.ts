@@ -272,7 +272,8 @@ export function createShopifyAppPricingProviderV2(args: {
       };
       if (active.billingPeriod !== "EVERY_30_DAYS")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_CADENCE_MISMATCH");
-      const allowedHandle = noChargeShops.has(shop) && testPlanHandle
+      const privateTestEligible = noChargeShops.has(shop);
+      const allowedHandle = privateTestEligible && testPlanHandle
         ? [planHandle, testPlanHandle]
         : [planHandle];
       const matchingItems = items.filter((item) => allowedHandle.includes(item.handle));
@@ -280,28 +281,23 @@ export function createShopifyAppPricingProviderV2(args: {
         throw new Error("SHOPIFY_APP_PRICING_OFFER_HANDLE_MISMATCH");
       // Shopify can retain an inactive prior price beside the current price when
       // a plan is updated. Select the active version of the approved handle.
-      // For no-charge testing Shopify can instead expose one effective $0 price
-      // with `active: false` inside an authoritative activeSubscription. That
-      // narrow shape is accepted only for an explicitly allowlisted dev store.
-      const activeItems = items.filter((item) => item.active);
+      // Shopify owns eligibility for no-charge testing of a public plan and
+      // returns its effective $0 price inside the canonical active contract.
+      // The private test plan remains restricted to the explicit shop list.
+      const expectedAmounts = ["49.00", "0.00"];
       const approvedItem = matchingItems.find((item) => item.active) ??
-        (noChargeShops.has(shop) && activeItems.length === 0
-          ? matchingItems.find((item) => decimalEquals(item.amount, "0.00"))
-          : undefined) ??
+        matchingItems.find((item) =>
+          expectedAmounts.some((amount) => decimalEquals(item.amount, amount))) ??
         matchingItems[0];
       if (approvedItem.type !== "FlatRatePrice")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_TYPE_MISMATCH");
       if (approvedItem.currency !== "USD")
         throw new Error("SHOPIFY_APP_PRICING_OFFER_CURRENCY_MISMATCH");
       const approvedPublicPrice = approvedItem.handle === planHandle &&
-        approvedItem.active &&
-        decimalEquals(approvedItem.amount, "49.00");
-      const approvedTestPrice = noChargeShops.has(shop) &&
-        [planHandle, testPlanHandle].includes(approvedItem.handle) &&
-        (approvedItem.active || activeItems.length === 0) &&
+        ["49.00", "0.00"].some((amount) => decimalEquals(approvedItem.amount, amount));
+      const approvedTestPrice = privateTestEligible &&
+        approvedItem.handle === testPlanHandle &&
         decimalEquals(approvedItem.amount, "0.00");
-      if (!approvedItem.active && !approvedTestPrice)
-        throw new Error("SHOPIFY_APP_PRICING_OFFER_INACTIVE");
       if (!approvedPublicPrice && !approvedTestPrice)
         throw new Error("SHOPIFY_APP_PRICING_OFFER_AMOUNT_MISMATCH");
       const sourceHash = digest(material);
@@ -317,7 +313,9 @@ export function createShopifyAppPricingProviderV2(args: {
         sourceVersion: `partner-${PARTNER_API_VERSION}:${sourceHash}`,
         updatedAt: observedAt,
         periodEnd: cycleEnd ?? trialEndsAt,
-        cancellationAt: active.cancelAtEndOfCycle ? cycleEnd ?? observedAt : null,
+        cancellationAt: active.cancelAtEndOfCycle
+          ? cycleEnd ?? trialEndsAt ?? observedAt
+          : null,
       };
     },
   };
