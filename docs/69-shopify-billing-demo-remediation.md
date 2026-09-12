@@ -28,6 +28,8 @@ The original `/Users/erenyigit/Documents/ChatGPT/ecommerce ai` checkout has data
 
 One integrated `pnpm check` on Node 24.19.0 passed 383/383 tests, TypeScript, full ESLint, application production build and Shopify extension build. This proves tested source behavior, not acceptance/decline/reinstall in Shopify or functional onboarding on a real storefront. Any later change needs verification proportionate to its scope.
 
+Final reviewer-UI source `637c48c37d1d2dd1ddff81c0c74927c5dbe49530` is pushed and deployed as Fly machine version 41/image `deployment-01M2B5J4H16K7GTZ4PXM0YD7M6`. Machine `d8d1497a937658` is started in `fra`; its Fly service check passes and the public health endpoint returns 200. All 28 migrations remain current. Startup encrypted backup `pagnetic-2108ff79-9adf-4490-af27-51b993bc7ab8.sqlite.enc` passed verification and isolated restore in 1558ms without changing remote backup objects. Proportionate final checks passed: 18 billing tests, 9 subscription-presentation tests, 3 approved-message/preview UI tests, TypeScript and the application production build. These checks do not complete the still-pending live preview/Settings verification, uninstall/reinstall, owner package approval, final video or resubmission.
+
 ## Live reproduction and provider semantics
 
 - Public Founding Beta test approval returned charge `37179097394`. Shopify explicitly displayed that no charge would be billed.
