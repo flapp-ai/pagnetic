@@ -1,6 +1,12 @@
 # Shopify submission checkpoint — 2026-09-07
 
-Status: RESUBMITTED and IN REVIEW after targeted remediation, verified live on 2026-09-07. Shopify approval and published availability remain pending.
+Current checkpoint2026-09-12: ACTION NEEDED; billing/reinstall repairs are live-tested, but the new complete screencast and resubmission remain pending. The Sep7 resubmission receipt below is historical, not current approval.
+
+## Owned-store reinstall recovery — 2026-09-12
+
+Owner-approved package approval and uninstall/reinstall completed in actual Shopify UI. Reinstall refreshed the provider contract to cancellation scheduled through Oct12; Shopify's own plan screen showed the same expiry. Declining reapproval retained that boundary; explicit free-test reapproval freshly restored Active with a confirmed date. No real charge was created.
+
+The test exposed stale deleted-pixel recovery. Reviewed source `e8ed09a6c0f5cb7bee4e1929c5bb5ca9ecd2feb8` was pushed and deployed in image `deployment-01M2BKBK3R644CTNHASYKCAZXC`. Its 19 targeted measurement tests, TypeScript and production build passed. Public health returns200 and Fly's check passes. Normal measurement-page recovery and the actual **Reconnect pixel** button now succeed; serving holds were not cleared. Fly's postdeploy DNS probe to8.8.8.8 timed out locally, but the public health request succeeded. Full lifecycle evidence, recording paths and remaining gates are in doc69.
 
 ## Shopify App Pricing remediation — 2026-09-12
 
