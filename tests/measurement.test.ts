@@ -95,6 +95,156 @@ test("adopts and updates Shopify's existing Web Pixel after a database move", as
   assert.equal(credential.webPixelId, "gid://shopify/WebPixel/42");
 });
 
+test("creates Shopify's replacement pixel after uninstall leaves a stale local ID", async () => {
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
+  const db = {
+    pixelCredential: {
+      findUnique: async () => ({
+        webPixelId: "gid://shopify/WebPixel/deleted",
+        status: "INACTIVE",
+      }),
+      upsert: async ({ update }: { update: Record<string, unknown> }) => update,
+    },
+  } as unknown as PrismaClient;
+  const graphql = async (
+    query: string,
+    options?: { variables?: Record<string, unknown> },
+  ) => {
+    calls.push({ query, variables: options?.variables });
+    if (query.includes("CurrentAdaptivePixel")) {
+      return Response.json({
+        data: { webPixel: null },
+        errors: [
+          {
+            message: "No web pixel was found for this app.",
+            path: ["webPixel"],
+            extensions: { code: "RESOURCE_NOT_FOUND" },
+          },
+        ],
+      });
+    }
+    return Response.json({
+      data: {
+        webPixelCreate: {
+          userErrors: [],
+          webPixel: { id: "gid://shopify/WebPixel/reinstalled" },
+        },
+      },
+    });
+  };
+
+  const credential = await activateWebPixel({
+    db,
+    merchantId: "merchant_1",
+    shop: "shop.myshopify.com",
+    endpoint: "https://pagnetic.example/storefront/events",
+    graphql,
+  });
+
+  assert.equal(calls.length, 2);
+  assert.match(calls[0].query, /CurrentAdaptivePixel/);
+  assert.match(calls[1].query, /webPixelCreate/);
+  assert.equal(calls[1].variables?.id, undefined);
+  assert.equal(credential.webPixelId, "gid://shopify/WebPixel/reinstalled");
+  assert.equal(credential.status, "ACTIVE");
+});
+
+test("does not create a pixel when canonical lookup returns an authorization error", async () => {
+  const calls: string[] = [];
+  const db = {
+    pixelCredential: {
+      findUnique: async () => ({
+        webPixelId: "gid://shopify/WebPixel/deleted",
+        status: "INACTIVE",
+      }),
+      upsert: async () => assert.fail("must not persist after lookup failure"),
+    },
+  } as unknown as PrismaClient;
+
+  await assert.rejects(
+    activateWebPixel({
+      db,
+      merchantId: "merchant_1",
+      shop: "shop.myshopify.com",
+      endpoint: "https://pagnetic.example/storefront/events",
+      graphql: async (query) => {
+        calls.push(query);
+        return Response.json({ errors: [{ message: "Access denied" }] });
+      },
+    }),
+    /Access denied/,
+  );
+  assert.equal(calls.length, 1);
+  assert.match(calls[0], /CurrentAdaptivePixel/);
+});
+
+test("does not create a pixel from a malformed canonical response", async () => {
+  let persisted = false;
+  const db = {
+    pixelCredential: {
+      upsert: async () => {
+        persisted = true;
+      },
+    },
+  } as unknown as PrismaClient;
+
+  await assert.rejects(
+    activateWebPixel({
+      db,
+      merchantId: "merchant_1",
+      shop: "shop.myshopify.com",
+      endpoint: "https://pagnetic.example/storefront/events",
+      graphql: async () => Response.json({ data: {} }),
+    }),
+    /invalid Web Pixel response/,
+  );
+  assert.equal(persisted, false);
+});
+
+test("creates after the Shopify SDK throws its typed canonical not-found error", async () => {
+  let call = 0;
+  const db = {
+    pixelCredential: {
+      upsert: async ({ update }: { update: Record<string, unknown> }) => update,
+    },
+  } as unknown as PrismaClient;
+  const credential = await activateWebPixel({
+    db,
+    merchantId: "merchant_1",
+    shop: "shop.myshopify.com",
+    endpoint: "https://pagnetic.example/storefront/events",
+    graphql: async () => {
+      call += 1;
+      if (call === 1) {
+        throw Object.assign(new Error("No web pixel was found for this app."), {
+          body: {
+            data: { webPixel: null },
+            errors: {
+              graphQLErrors: [
+                {
+                  message: "No web pixel was found for this app.",
+                  path: ["webPixel"],
+                  extensions: { code: "RESOURCE_NOT_FOUND" },
+                },
+              ],
+            },
+          },
+        });
+      }
+      return Response.json({
+        data: {
+          webPixelCreate: {
+            userErrors: [],
+            webPixel: { id: "gid://shopify/WebPixel/sdk-reinstall" },
+          },
+        },
+      });
+    },
+  });
+  assert.equal(call, 2);
+  assert.equal(credential.webPixelId, "gid://shopify/WebPixel/sdk-reinstall");
+});
+
 test("event payload data is allow-listed by event type", () => {
   assert.deepEqual(
     sanitizedEventData("checkout_completed", {

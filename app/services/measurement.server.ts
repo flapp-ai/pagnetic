@@ -985,31 +985,72 @@ export async function activateWebPixel(args: {
     shop: args.shop,
     token,
   });
-  const existing = await args.db.pixelCredential.findUnique({
-    where: { merchantId: args.merchantId },
-  });
-  let webPixelId = existing?.webPixelId ?? null;
-  if (!webPixelId) {
-    await args.assertActive?.(args.db);
+  // Shopify deletes the Web Pixel when an app is uninstalled. A persisted ID
+  // is therefore only historical metadata after reinstall; always resolve the
+  // current canonical pixel before deciding whether to update or create.
+  await args.assertActive?.(args.db);
+  type CurrentPixelJson = {
+    data?: { webPixel?: { id: string } | null };
+    errors?: Array<{
+      message?: string;
+      path?: unknown[];
+      extensions?: { code?: string };
+    }>;
+  };
+  const canonicalNotFoundError = (value: unknown) => {
+    if (!value || typeof value !== "object") return null;
+    const body = (value as { body?: unknown }).body;
+    if (!body || typeof body !== "object") return null;
+    const typedBody = body as {
+      data?: { webPixel?: unknown };
+      errors?: { graphQLErrors?: CurrentPixelJson["errors"] };
+    };
+    const graphQLErrors = typedBody.errors?.graphQLErrors;
+    const error = graphQLErrors?.[0];
+    return typedBody.data?.webPixel === null &&
+      graphQLErrors?.length === 1 &&
+      error?.extensions?.code === "RESOURCE_NOT_FOUND" &&
+      error.path?.length === 1 &&
+      error.path[0] === "webPixel"
+      ? { data: { webPixel: null }, errors: graphQLErrors }
+      : null;
+  };
+  let currentJson: CurrentPixelJson;
+  try {
     const currentResponse = await args.graphql(`#graphql
       query CurrentAdaptivePixel {
         webPixel {
           id
         }
       }`);
-    const currentJson = (await currentResponse.json()) as {
-      data?: { webPixel?: { id: string } | null };
-      errors?: Array<{ message?: string }>;
-    };
-    await args.assertActive?.(args.db);
-    if (currentJson.errors?.length) {
-      throw new Error(
-        currentJson.errors[0]?.message ??
-          "Shopify did not return the existing Web Pixel.",
-      );
-    }
-    webPixelId = currentJson.data?.webPixel?.id ?? null;
+    currentJson = (await currentResponse.json()) as CurrentPixelJson;
+  } catch (error) {
+    const canonicalAbsent = canonicalNotFoundError(error);
+    if (!canonicalAbsent) throw error;
+    currentJson = canonicalAbsent;
   }
+  await args.assertActive?.(args.db);
+  const canonicalNotFound =
+    currentJson.data?.webPixel === null &&
+    currentJson.errors?.length === 1 &&
+    currentJson.errors[0]?.extensions?.code === "RESOURCE_NOT_FOUND" &&
+    currentJson.errors[0]?.path?.length === 1 &&
+    currentJson.errors[0].path[0] === "webPixel";
+  if (currentJson.errors?.length && !canonicalNotFound) {
+    throw new Error(
+      currentJson.errors[0]?.message ??
+        "Shopify did not return the existing Web Pixel.",
+    );
+  }
+  if (!currentJson.data || !Object.hasOwn(currentJson.data, "webPixel"))
+    throw new Error("Shopify returned an invalid Web Pixel response.");
+  const canonicalPixel = currentJson.data.webPixel;
+  if (
+    canonicalPixel !== null &&
+    (typeof canonicalPixel?.id !== "string" || !canonicalPixel.id.trim())
+  )
+    throw new Error("Shopify returned an invalid Web Pixel response.");
+  const webPixelId = canonicalPixel?.id ?? null;
   const query = webPixelId
     ? `#graphql
       mutation UpdateAdaptivePixel($id: ID!, $webPixel: WebPixelInput!) {
