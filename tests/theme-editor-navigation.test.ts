@@ -1,14 +1,20 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
-test("every Overview theme-editor POST escapes the embedded app frame", () => {
-  const route = readFileSync(
-    new URL("../app/routes/app._index.tsx", import.meta.url),
-    "utf8",
+import { ThemeEditorLink } from "../app/components/theme-editor-link";
+
+test("theme-editor navigation renders as an unenhanced top-level anchor", () => {
+  const html = renderToStaticMarkup(
+    createElement(
+      ThemeEditorLink,
+      { href: "https://store.myshopify.com/admin/themes/current/editor?template=product" },
+      "Open theme editor",
+    ),
   );
-  const forms = route.match(
-    /<Form method="post" target="_top">\s*<input name="intent" type="hidden" value="open-theme-editor" \/>/g,
-  );
-  assert.equal(forms?.length, 2);
+  assert.match(html, /^<a /);
+  assert.match(html, /target="_top"/);
+  assert.match(html, /rel="noreferrer"/);
+  assert.doesNotMatch(html, /<form|method="post"/);
 });

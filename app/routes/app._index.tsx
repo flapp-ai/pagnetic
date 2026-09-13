@@ -39,6 +39,7 @@ import {
 import { themeEditorDeepLink } from "../services/pilot-setup";
 import { recordThemeActivation } from "../services/pilot-setup.server";
 import { publicAppOrigin } from "../services/public-origin.server";
+import { ThemeEditorLink } from "../components/theme-editor-link";
 import {
   createShopifyAppPricingProviderV2,
   loadShopifyShopIdV2,
@@ -853,13 +854,9 @@ export function DashboardView({
             Review opportunity →
           </a>
         ) : view.plan && ["APPROVED", "WAITING_FOR_THEME"].includes(view.plan.state) ? (
-          <Form method="post" target="_top">
-            <input name="intent" type="hidden" value="open-theme-editor" />
-            <input name="planId" type="hidden" value={view.plan.id} />
-            <button className={styles.primaryButton} disabled={busy} type="submit">
-              Open theme editor →
-            </button>
-          </Form>
+          <ThemeEditorLink className={styles.primaryButton} href={data.themeEditorUrl}>
+            Open theme editor →
+          </ThemeEditorLink>
         ) : !view.plan ? (
           <Form method="post">
             <input name="intent" type="hidden" value="prepare" />
@@ -1207,11 +1204,9 @@ export function DashboardView({
               : "Return here after saving. Pagnetic checks the published theme—not a preview or unpublished copy."}
           </p>
           <div className={styles.actionRow}>
-            <Form method="post" target="_top">
-              <input name="intent" type="hidden" value="open-theme-editor" />
-              <input name="planId" type="hidden" value={view.plan.id} />
-              <button className={styles.primaryButton} disabled={busy} type="submit">Open theme editor</button>
-            </Form>
+            <ThemeEditorLink className={styles.primaryButton} href={data.themeEditorUrl}>
+              Open theme editor
+            </ThemeEditorLink>
             <button className={styles.secondaryButton} disabled={busy} onClick={checkPublishedTheme} type="button">
               {recapturingReleaseEvidence
                 ? "Verify current release now"
