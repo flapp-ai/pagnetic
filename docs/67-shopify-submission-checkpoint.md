@@ -2,6 +2,10 @@
 
 Current checkpoint2026-09-12: ACTION NEEDED; billing/reinstall repairs are live-tested, but the new complete screencast and resubmission remain pending. The Sep7 resubmission receipt below is historical, not current approval.
 
+## Scoped test-store enablement — 2026-09-13
+
+Release43/source `42dd579a84e25a9cfb7922fb7180fa00888e9ab9` is deployed healthy. A new strict runtime allowlist enables v2 only for test1, independently of cutover permission; other stores fail closed. Affected tests63/63, TypeScript and production build pass. Actual published-page DOM confirms `KILL_SWITCH_ACTIVE`, hidden panel, no deployment and unmeasured Original fallback. Runtime independently confirms zero active experiments/deployments, intact uninstall hold and active canonical pixel. Backup verification/restore1487ms and28 current migrations passed. Clearing only the uninstall pause for fresh setup needs the separately requested owner answer; no hold or experiment was activated. The full video and resubmission remain pending.
+
 ## Owned-store reinstall recovery — 2026-09-12
 
 Owner-approved package approval and uninstall/reinstall completed in actual Shopify UI. Reinstall refreshed the provider contract to cancellation scheduled through Oct12; Shopify's own plan screen showed the same expiry. Declining reapproval retained that boundary; explicit free-test reapproval freshly restored Active with a confirmed date. No real charge was created.

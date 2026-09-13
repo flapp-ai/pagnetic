@@ -15,6 +15,14 @@ Scoped guard implementation requires both the global flag and exact normalized m
 
 Browser checks: exact approved message preview remains available; the real synthetic product loads after using the existing store-access password privately, without changing settings. Original description and USD10 price remain visible. Native Add to cart produced a USD10 subtotal and checkout control; the agent-added item was removed and the cart confirmed empty. No order, charge, adaptive treatment or checkout-join proof is claimed from this check.
 
+### Deployed scoped-testing proof
+
+Source `42dd579a84e25a9cfb7922fb7180fa00888e9ab9` is pushed and deployed as Fly release43/image `deployment-01M2CHBHTTZ5S0GJDSEHFBE82G`. Both public health and Fly checks pass; global v2=true plus exact runtime list=test1 is confirmed. The published product's actual DOM, after healthy startup, reports `data-adaptive-reason=KILL_SWITCH_ACTIVE`, `data-adaptive-measured=false`, no deployment, initialized=true, and panel hidden. This is real storefront Original fallback, not an adaptive treatment. One startup-era page load reported consent_unavailable and correctly kept Original; it is not counted as a consent-flow pass.
+
+Independent runtime snapshot confirms the `App uninstalled` hold unchanged, zero active experiments, zero active deployments, active pixel matching Shopify's canonical ID, and provider-confirmed subscription access through Oct12. All28 migrations are current. Encrypted startup backup `pagnetic-9fba8c0d-4048-4c2f-88f3-5e1265a90ec2.sqlite.enc` verified/restored in1487ms with remote objects unchanged.
+
+Remaining action-time permission: clear only the verified test1 uninstall pause to permit fresh preparation, keeping experiments stopped and all other checks required. No answer was received in this continuation, so no hold was cleared. The full demo, authenticated QA artifact approvals and resubmission remain incomplete; no review finding was marked resolved.
+
 ## Source and workspace
 
 Owner supplied Shopify requirements 1.2.2 and 4.5.3 with reviewer videos:
