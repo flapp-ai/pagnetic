@@ -1,5 +1,9 @@
 # Pagnetic MVP v2 — implementation status
 
+## Latest continuation — 2026-09-13
+
+Release43 is healthy. The owner-approved test1-only v2 gate is implemented and enabled; exact runtime shop membership is required. Actual storefront verification returns Original/KILL_SWITCH_ACTIVE, with zero active experiments or deployments. Scoped tests63/63, typecheck, build and encrypted backup recovery pass. Fresh setup is blocked by the retained `App uninstalled` pause; separate permission to clear only that pause was requested and remains unanswered. The full reviewer demo and resubmission are still pending. See doc69 for exact evidence; this supersedes the test-only enablement gate in the Sep12 entry.
+
 ## Latest Shopify feedback remediation — 2026-09-12
 
 **IN_PROGRESS / ACTION NEEDED.** This supersedes the Sep7 review-status statements below. Shopify returned billing navigation/reinstall findings (1.2.2) and rejected the non-demonstrative screencast (4.5.3). Billing repairs are deployed and live-tested: View plans opens top-level; actual owner-authorized uninstall/reinstall freshly showed cancellation and the same Oct12 expiry as Shopify; decline and explicit free-test reapproval worked. The exact synthetic package is owner-approved. Reinstall additionally exposed a stale deleted-pixel-ID bug; source `e8ed09a` is deployed and actual Reconnect pixel now succeeds. A real billing video is saved locally, but the complete onboarding/configuration/working-storefront video and resubmission are not complete. Serving remains paused; test1-only v2 testing permission, genuine scoped QA and owner-reviewed activation remain gates. See [current evidence and remaining gates](./69-shopify-billing-demo-remediation.md), [recording runbook](./68-reviewer-live-demo-runbook.md), and [deployment checkpoint](./67-shopify-submission-checkpoint.md). Do not infer approval or active adaptive serving from the historical entries below.
