@@ -6,7 +6,7 @@ import { canonicalQueuePayload, QueueIdempotencyConflictError } from "./job-outb
 import {
   MVP_V2_PRIMARY_METRIC,
   MVP_V2_PROTOCOL_VERSION,
-  mvpV2Config,
+  mvpV2EnabledForShop,
 } from "./mvp-v2";
 import { canonicalProductId, validateRuntimeExperience } from "./runtime.server";
 import { assertIdentityNotSuppressed, PrivacyIdentitySuppressedError } from "./identity-privacy-guard.server";
@@ -488,7 +488,8 @@ export async function resolveV2Decision(args: {
   environment?: Record<string, string | undefined>;
 }): Promise<DecisionResponseV2> {
   const environment = args.environment ?? process.env;
-  if (!mvpV2Config(environment).enabled) return originalDecisionV2("V2_DISABLED");
+  if (!mvpV2EnabledForShop(args.shop, environment))
+    return originalDecisionV2("V2_DISABLED");
   const assignmentSecret = secret(environment);
   const now = args.now ?? new Date();
   const shopifyProductId = canonicalProductId(args.request.productId);

@@ -15,6 +15,7 @@ import { ADAPTIVE_EXPERIMENT_QUESTIONS, campaignSignature } from "../app/service
 import { registerAdaptiveExperiment } from "../app/services/adaptive-experiment.server";
 import { approveAdaptivePackageReview, buildAdaptiveApprovedPackage, createAdaptivePackageReview, installAdaptiveApprovedPackage } from "../app/services/adaptive-package.server";
 import { loadAdaptiveCoverage } from "../app/services/experiment-report-v2.server";
+import { hashPixelToken, ingestPixelEvent } from "../app/services/measurement.server";
 
 function testDatabase() {
   const directory = mkdtempSync(path.join(tmpdir(), "pagnetic-v2-runtime-"));
@@ -97,7 +98,14 @@ async function seedExperiment(db: PrismaClient, fixture: Awaited<ReturnType<type
   } });
 }
 
-const environment = { PAGNETIC_V2_ENABLED: "true", ASSIGNMENT_SECRET: "a-secure-test-secret-that-is-at-least-32-characters" };
+const environment = {
+  PAGNETIC_V2_ENABLED: "true",
+  PAGNETIC_V2_ENABLED_SHOPS: [
+    "2001", "adaptive-protocols", "1001", "1001-atomic", "1001-entitlement",
+    "1002", "1006", "1007", "1008", "1003", "1004", "1005",
+  ].map((suffix) => `v2-${suffix}.myshopify.com`).join(","),
+  ASSIGNMENT_SECRET: "a-secure-test-secret-that-is-at-least-32-characters",
+};
 function request(
   productId: string,
   requestId = "request_0001",
@@ -587,5 +595,70 @@ test("invalid consent and disabled v2 never persist shopper identity", async () 
     assert.equal(await fixture.db.decision.count(), 0);
     assert.equal(await fixture.db.assignment.count(), 0);
     assert.equal(await fixture.db.actionReceipt.count(), 0);
+  } finally { await fixture.close(); }
+});
+
+test("global v2 remains disabled outside the exact runtime shop allowlist", async () => {
+  const fixture = testDatabase();
+  try {
+    const seeded = await seedRuntime(fixture.db, "9999");
+    const result = await resolveV2Decision({
+      db: fixture.db,
+      shop: seeded.merchant.shop,
+      request: request(seeded.product.shopifyProductId, "request_not_allowlisted"),
+      environment,
+    });
+    assert.equal(result.reason, "V2_DISABLED");
+  } finally { await fixture.close(); }
+});
+
+test("runtime shop allowlist scopes unversioned ingestion without weakening explicit v2 consent", async () => {
+  const fixture = testDatabase();
+  try {
+    const selected = await seedRuntime(fixture.db, "9101");
+    const other = await seedRuntime(fixture.db, "9102");
+    const selectedToken = "selected-pixel-token-at-least-32-characters";
+    const otherToken = "other-pixel-token-at-least-32-characters";
+    await fixture.db.pixelCredential.createMany({ data: [
+      { merchantId: selected.merchant.id, tokenHash: hashPixelToken(selectedToken), endpoint: "https://example.test/events", status: "ACTIVE" },
+      { merchantId: other.merchant.id, tokenHash: hashPixelToken(otherToken), endpoint: "https://example.test/events", status: "ACTIVE" },
+    ] });
+    const scopedEnvironment = {
+      PAGNETIC_V2_ENABLED: "true",
+      PAGNETIC_V2_ENABLED_SHOPS: selected.merchant.shop,
+      ASSIGNMENT_SECRET: "a".repeat(64),
+    };
+    const now = new Date("2026-09-12T00:01:00.000Z");
+    const base = {
+      schemaVersion: 1,
+      eventType: "product_viewed",
+      occurredAt: "2026-09-12T00:00:00.000Z",
+      consentState: "analytics_allowed",
+      clientId: "shopify-client-ingestion-scope",
+      data: {},
+    };
+    const legacyOther = await ingestPixelEvent({
+      db: fixture.db,
+      now,
+      environment: scopedEnvironment,
+      payload: { ...base, shop: other.merchant.shop, token: otherToken, eventId: "legacy-other" },
+    });
+    assert.equal(legacyOther.accepted, true, JSON.stringify(legacyOther));
+
+    const explicitV2Other = await ingestPixelEvent({
+      db: fixture.db,
+      now,
+      environment: scopedEnvironment,
+      payload: { ...base, schemaVersion: 2, shop: other.merchant.shop, token: otherToken, eventId: "explicit-v2-other" },
+    });
+    assert.equal(explicitV2Other.reason, "consent_not_allowed");
+
+    const selectedUnversioned = await ingestPixelEvent({
+      db: fixture.db,
+      now,
+      environment: scopedEnvironment,
+      payload: { ...base, shop: selected.merchant.shop, token: selectedToken, eventId: "selected-unversioned" },
+    });
+    assert.equal(selectedUnversioned.reason, "consent_not_allowed");
   } finally { await fixture.close(); }
 });

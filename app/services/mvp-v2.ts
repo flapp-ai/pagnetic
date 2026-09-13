@@ -12,6 +12,23 @@ function enabled(value: string | undefined) {
   return value === "true";
 }
 
+const SHOP_DOMAIN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+
+export function mvpV2EnabledForShop(
+  shop: string,
+  environment: Record<string, string | undefined> = process.env,
+) {
+  if (!enabled(environment.PAGNETIC_V2_ENABLED)) return false;
+  const normalized = shop.trim().toLowerCase();
+  if (!SHOP_DOMAIN.test(normalized)) return false;
+  return String(environment.PAGNETIC_V2_ENABLED_SHOPS ?? "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => SHOP_DOMAIN.test(value))
+    .slice(0, 20)
+    .includes(normalized);
+}
+
 export function mvpV2Config(
   environment: Record<string, string | undefined> = process.env,
 ) {

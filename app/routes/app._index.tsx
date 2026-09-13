@@ -34,6 +34,7 @@ import { ensureMerchant, syncProducts } from "../services/governance.server";
 import {
   LEGACY_AUTOPILOT_PLAN_PROTOCOL_VERSION,
   MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION,
+  mvpV2EnabledForShop,
 } from "../services/mvp-v2";
 import { themeEditorDeepLink } from "../services/pilot-setup";
 import { recordThemeActivation } from "../services/pilot-setup.server";
@@ -298,7 +299,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     preparationPending,
     v2CutoverSelected,
     v2SourceInvalidatedCutover,
-    v2Enabled: process.env.PAGNETIC_V2_ENABLED === "true",
+    v2Enabled: mvpV2EnabledForShop(session.shop),
     v2QaProgress,
     v2PreparationRetry,
     v2Reselection,
@@ -583,7 +584,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     }
     if (intent === "activate-v2-cutover") {
-      if (process.env.PAGNETIC_V2_ENABLED !== "true")
+      if (!mvpV2EnabledForShop(session.shop))
         throw new Error("V2_CUTOVER_REVIEWED_BACKEND_NOT_ENABLED");
       assertSelectedV2CutoverShop({ shop: session.shop });
       const planId = String(formData.get("planId") ?? "");

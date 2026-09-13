@@ -3,6 +3,18 @@
 Date: 2026-09-12
 Status: IN PROGRESS — do not mark reviewer findings resolved until live evidence below is complete.
 
+## Sep13 continuation scope
+
+Owner's “go on” authorizes the pending test1-only v2 testing request, with Original and safety holds retained; it does not authorize experiment activation. Fresh browser inspection confirms Overview still reports `AUTOPILOT_PREPARATION_INACTIVE`, while the exact campaign message and package `031bd66c…535898` remain APPROVED after reinstall.
+
+Pre-enablement inspection found the current `PAGNETIC_V2_ENABLED` switch is process-global; `PAGNETIC_V2_CUTOVER_SHOPS` restricts cutover actions, not all decision/orchestration/ingestion paths. A strict runtime per-shop gate is being added before enabling anything. The sole current Merchant row does not substitute for durable tenant isolation.
+
+The uninstall hold also blocks every existing fresh-preparation/retry path. Requested separate permission to clear only test1's `App uninstalled` pause after reinstall verification, leaving experiments stopped and all other gates intact. Until answered, no hold is cleared and no fresh plan is falsely represented as prepared.
+
+Scoped guard implementation requires both the global flag and exact normalized membership in new `PAGNETIC_V2_ENABLED_SHOPS`, separate from cutover permission. It covers decisions, orchestration, ingestion fallback, merchant automation, order routing and Overview activation. Explicit historical v2 events retain v2 consent rules. Affected suites63/63 and TypeScript passed; root reviewed the diff. Deployment configuration selects test1 only; actual deployed proof is recorded separately when verified.
+
+Browser checks: exact approved message preview remains available; the real synthetic product loads after using the existing store-access password privately, without changing settings. Original description and USD10 price remain visible. Native Add to cart produced a USD10 subtotal and checkout control; the agent-added item was removed and the cart confirmed empty. No order, charge, adaptive treatment or checkout-join proof is claimed from this check.
+
 ## Source and workspace
 
 Owner supplied Shopify requirements 1.2.2 and 4.5.3 with reviewer videos:

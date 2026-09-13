@@ -20,6 +20,7 @@ import {
   MVP_V2_PRIMARY_METRIC,
   MVP_V2_PROTOCOL_VERSION,
   mvpV2Config,
+  mvpV2EnabledForShop,
 } from "../app/services/mvp-v2";
 
 function testDatabase() {
@@ -144,6 +145,27 @@ test("v2 protocol, model, offer, shadow and billing features default closed", ()
   assert.equal(live.modelEnabled, true);
   assert.equal(live.offerPublishable, true);
   assert.equal(live.billingEnabled, true);
+
+  assert.equal(
+    mvpV2EnabledForShop("selected.myshopify.com", {
+      PAGNETIC_V2_ENABLED: "true",
+      PAGNETIC_V2_ENABLED_SHOPS: " other.myshopify.com,SELECTED.myshopify.com ",
+    }),
+    true,
+  );
+  assert.equal(
+    mvpV2EnabledForShop("other.myshopify.com", {
+      PAGNETIC_V2_ENABLED: "true",
+      PAGNETIC_V2_ENABLED_SHOPS: "selected.myshopify.com",
+    }),
+    false,
+  );
+  assert.equal(
+    mvpV2EnabledForShop("selected.myshopify.com", {
+      PAGNETIC_V2_ENABLED: "true",
+    }),
+    false,
+  );
 });
 
 test("job and outbox foundations are tenant-scoped, idempotent and lease-safe", async () => {

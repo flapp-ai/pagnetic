@@ -1026,10 +1026,22 @@ test("enabling v2 never reinterprets a previously approved legacy plan", async (
 test("v2 plans fail closed while disabled or when their persisted origin contradicts their snapshots", async () => {
   const database = testDatabase();
   const previous = process.env.PAGNETIC_V2_ENABLED;
+  const previousShops = process.env.PAGNETIC_V2_ENABLED_SHOPS;
   try {
     process.env.PAGNETIC_V2_ENABLED = "true";
     const { db } = database;
     const disabled = await createApprovedV2Plan(db, "v2-disabled-boundary");
+
+    const notAllowlisted = await advanceAutopilotPlan({
+      db,
+      merchantId: disabled.merchant.id,
+      planId: disabled.approved.id,
+    });
+    assert.equal(notAllowlisted.outcome, "V2_DISABLED");
+    assert.equal(
+      await db.experiment.count({ where: { merchantId: disabled.merchant.id } }),
+      0,
+    );
 
     process.env.PAGNETIC_V2_ENABLED = "false";
     const disabledResult = await advanceAutopilotPlan({
@@ -1053,6 +1065,7 @@ test("v2 plans fail closed while disabled or when their persisted origin contrad
 
     process.env.PAGNETIC_V2_ENABLED = "true";
     const mismatched = await createApprovedV2Plan(db, "v2-marker-mismatch");
+    process.env.PAGNETIC_V2_ENABLED_SHOPS = mismatched.merchant.shop;
     const contradictoryApproval = JSON.parse(
       mismatched.approved.approvalRecordJson ?? "{}",
     ) as Record<string, unknown>;
@@ -1087,6 +1100,8 @@ test("v2 plans fail closed while disabled or when their persisted origin contrad
   } finally {
     if (previous == null) delete process.env.PAGNETIC_V2_ENABLED;
     else process.env.PAGNETIC_V2_ENABLED = previous;
+    if (previousShops == null) delete process.env.PAGNETIC_V2_ENABLED_SHOPS;
+    else process.env.PAGNETIC_V2_ENABLED_SHOPS = previousShops;
     await database.close();
   }
 });
@@ -1094,10 +1109,12 @@ test("v2 plans fail closed while disabled or when their persisted origin contrad
 test("v2 plan bootstraps Original baseline, freezes qualified message test, and exposes only pinned result", async () => {
   const database = testDatabase();
   const previous = process.env.PAGNETIC_V2_ENABLED;
+  const previousShops = process.env.PAGNETIC_V2_ENABLED_SHOPS;
   process.env.PAGNETIC_V2_ENABLED = "true";
   try {
     const { db } = database;
     const fixture = await createApprovedV2Plan(db, "v2-plan");
+    process.env.PAGNETIC_V2_ENABLED_SHOPS = fixture.merchant.shop;
     assert.equal(
       fixture.approved.orchestrationProtocolVersion,
       MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION,
@@ -1321,6 +1338,8 @@ test("v2 plan bootstraps Original baseline, freezes qualified message test, and 
   } finally {
     if (previous == null) delete process.env.PAGNETIC_V2_ENABLED;
     else process.env.PAGNETIC_V2_ENABLED = previous;
+    if (previousShops == null) delete process.env.PAGNETIC_V2_ENABLED_SHOPS;
+    else process.env.PAGNETIC_V2_ENABLED_SHOPS = previousShops;
     await database.close();
   }
 });

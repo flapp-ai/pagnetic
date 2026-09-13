@@ -9,6 +9,7 @@ import {
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { assertOrderNotSuppressed, lockMerchantPrivacy, PrivacyOrderSuppressedError } from "./order-privacy-guard.server";
 import { assertIdentityNotSuppressed, PrivacyIdentitySuppressedError, type PrivacyIdentity } from "./identity-privacy-guard.server";
+import { mvpV2EnabledForShop } from "./mvp-v2";
 
 import {
   canonicalProductId,
@@ -854,7 +855,7 @@ export async function ingestPixelEvent(args: {
     : null;
   const consentState = String(payload.consentState ?? "unknown").slice(0, 64);
   const environment = args.environment ?? process.env;
-  const isV2 = payload.schemaVersion === 2 || decision?.experiment?.lifecycleVersion === 2 || environment.PAGNETIC_V2_ENABLED === "true";
+  const isV2 = payload.schemaVersion === 2 || decision?.experiment?.lifecycleVersion === 2 || mvpV2EnabledForShop(merchant.shop, environment);
   if (consentState !== "analytics_and_preferences_allowed" && (isV2 || consentState !== "analytics_allowed"))
     return { accepted: false, duplicate: false, reason: "consent_not_allowed" };
   if (decisionId && !decision)

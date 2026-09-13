@@ -6,7 +6,7 @@ import {
 } from "./autopilot-preparation-worker.server";
 import { advanceAutopilotPlan } from "./autopilot-orchestrator.server";
 import { deliverOperationalAlerts } from "./alert-delivery.server";
-import { mvpV2Config } from "./mvp-v2";
+import { mvpV2EnabledForShop } from "./mvp-v2";
 import { enqueueV2LifecycleJobs, runV2LifecycleJobs } from "./lifecycle-worker-v2.server";
 import { fetchShopifyFinancialOrderV2 } from "./shopify-financial-v2.server";
 import { runFinancialReconciliationJobsV2 } from "./webhook-inbox-v2.server";
@@ -137,7 +137,7 @@ export async function runMerchantAutomation(args: {
     },
   });
   try {
-    const v2 = mvpV2Config();
+    const v2Enabled = mvpV2EnabledForShop(args.shop);
     const preparationJobs = await runAutopilotPreparationJobs({
       db: args.db,
       merchantId: args.merchantId,
@@ -149,7 +149,7 @@ export async function runMerchantAutomation(args: {
     let financialJobs: Awaited<ReturnType<typeof runFinancialReconciliationJobsV2>> = [];
     let lifecycleJobs: Awaited<ReturnType<typeof runV2LifecycleJobs>> = [];
     let financialWorkerConfigurationError: string | null = null;
-    if (v2.enabled) {
+    if (v2Enabled) {
       const assignmentSecret = process.env.ASSIGNMENT_SECRET?.trim() ?? "";
       if (assignmentSecret.length < 32) {
         financialWorkerConfigurationError =

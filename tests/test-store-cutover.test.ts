@@ -798,6 +798,7 @@ test("reviewed v2 protocol can be enabled under the exact cutover hold without e
       request: { ...request, requestId: "held-protocol-enabled" },
       environment: {
         PAGNETIC_V2_ENABLED: "true",
+        PAGNETIC_V2_ENABLED_SHOPS: legacy.merchant.shop,
         ASSIGNMENT_SECRET: "a".repeat(64),
       },
       now: new Date(BASE.getTime() + 3_000),

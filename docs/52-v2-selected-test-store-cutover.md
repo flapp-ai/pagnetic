@@ -48,7 +48,8 @@ reinterpret a legacy approval when `PAGNETIC_V2_ENABLED` changes.
    pre-deployment context and `APP_RELEASE`. It clears only the exact migration
    hold. Missing evidence or a changed safety reason remains fail-closed. A
    durable release audit makes a successful retry idempotent.
-9. Baseline activation additionally requires `PAGNETIC_V2_ENABLED=true` and all
+9. Baseline activation additionally requires `PAGNETIC_V2_ENABLED=true`, exact shop
+   membership in `PAGNETIC_V2_ENABLED_SHOPS`, and all
    existing v2 activation gates. This code does not turn that flag on.
 
 ## Local evidence
@@ -105,12 +106,20 @@ No deployment, feature-flag change or provider write was part of this package.
    plan. This is a fresh approval, not a migrated approval.
 5. Save the `adaptive-panel` block on that product's published template. The
    exact migration hold is still active, so Original remains authoritative.
-6. Deploy the reviewed configuration with `PAGNETIC_V2_ENABLED=true` only after
+6. Deploy the reviewed configuration with `PAGNETIC_V2_ENABLED=true` and
+   `PAGNETIC_V2_ENABLED_SHOPS=test1-eczm2zce.myshopify.com` only after
    confirming that exact hold and selected scope. Before this point the endpoint
    correctly returns `V2_DISABLED`; after it, the still-active hold returns
    `KILL_SWITCH_ACTIVE`, `ORIGINAL`, and no assignment. Load the exact storefront
    product with analytics and preferences consent, observe that response, then
    select **I saved it — verify now**.
+
+   The runtime enabled-shops list is separate from `PAGNETIC_V2_CUTOVER_SHOPS`:
+   cutover permission alone never enables serving, orchestration or ingestion
+   behavior. Empty runtime membership fails closed even with the global flag on.
+   An `App uninstalled` hold is not the migration hold. After reinstall, follow
+   the explicit owner-approved recovery workflow; do not clear an unrelated hold
+   or reuse invalidated plan approval merely to continue this sequence.
 7. Capture the remaining scoped QA evidence from actual tests: mobile, desktop,
    standard checkout, accelerated checkout, Shop Pay (or evidenced absent/N/A),
    consent flows and performance. Store each artifact in the approved private

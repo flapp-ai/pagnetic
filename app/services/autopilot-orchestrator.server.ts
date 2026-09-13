@@ -13,6 +13,7 @@ import {
   LEGACY_AUTOPILOT_PLAN_PROTOCOL_VERSION,
   MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION,
   MVP_V2_PROTOCOL_VERSION,
+  mvpV2EnabledForShop,
 } from "./mvp-v2";
 import { hashValue } from "./governance.server";
 import { registerExperiment } from "./measurement.server";
@@ -804,13 +805,14 @@ export async function advanceAutopilotPlan(
       approvedAt: true,
       approvalRecordJson: true,
       cutoverReceiptId: true,
+      merchant: { select: { shop: true } },
     },
   });
   if (!plan) return advanceAutopilotPlanLegacy(args);
   const protocol = classifyAutopilotPlanProtocol(plan);
   if (protocol === "INVALID")
     return { outcome: "PROTOCOL_MISMATCH" as const };
-  if (protocol === "MVP_V2" && process.env.PAGNETIC_V2_ENABLED === "true") {
+  if (protocol === "MVP_V2" && mvpV2EnabledForShop(plan.merchant.shop)) {
     const { advanceAutopilotPlanV2 } =
       await import("./autopilot-v2-orchestrator.server");
     return advanceAutopilotPlanV2(args);

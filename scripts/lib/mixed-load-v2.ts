@@ -200,6 +200,7 @@ export async function runMixedLoadRehearsal(options: MixedLoadRehearsalOptions =
     const tenants: Array<Awaited<ReturnType<typeof seedTenant>>> = [];
     for (let index = 0; index < tenantCount; index += 1)
       tenants.push(await seedTenant(database.db, index));
+    const enabledShops = tenants.map((tenant) => tenant.merchant.shop).join(",");
 
     const rates = {
       decision: forecast.storefrontDecisionsPerSecond * multiplier,
@@ -251,7 +252,11 @@ export async function runMixedLoadRehearsal(options: MixedLoadRehearsalOptions =
               consent: { analytics: true, preferences: true, policyVersion: "shopify-consent-v1" },
               blockVersion: "adaptive-panel-v2",
             }),
-            environment: { PAGNETIC_V2_ENABLED: "true", ASSIGNMENT_SECRET },
+            environment: {
+              PAGNETIC_V2_ENABLED: "true",
+              PAGNETIC_V2_ENABLED_SHOPS: enabledShops,
+              ASSIGNMENT_SECRET,
+            },
             now: new Date("2026-09-05T00:00:00.000Z"),
           });
           fallback = response.reason !== "V2_EXPERIMENT_ASSIGNMENT";
@@ -305,7 +310,11 @@ export async function runMixedLoadRehearsal(options: MixedLoadRehearsalOptions =
             consent: { analytics: true, preferences: true, policyVersion: "shopify-consent-v1" },
             blockVersion: "adaptive-panel-v2",
           }),
-          environment: { PAGNETIC_V2_ENABLED: "true", ASSIGNMENT_SECRET },
+          environment: {
+            PAGNETIC_V2_ENABLED: "true",
+            PAGNETIC_V2_ENABLED_SHOPS: enabledShops,
+            ASSIGNMENT_SECRET,
+          },
           now: new Date("2026-09-05T00:00:00.000Z"),
         });
         const delayedDelivery = server.then(async (response) => {
