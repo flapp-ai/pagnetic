@@ -853,7 +853,7 @@ export function DashboardView({
             Review opportunity →
           </a>
         ) : view.plan && ["APPROVED", "WAITING_FOR_THEME"].includes(view.plan.state) ? (
-          <Form method="post">
+          <Form method="post" target="_top">
             <input name="intent" type="hidden" value="open-theme-editor" />
             <input name="planId" type="hidden" value={view.plan.id} />
             <button className={styles.primaryButton} disabled={busy} type="submit">
@@ -1207,7 +1207,7 @@ export function DashboardView({
               : "Return here after saving. Pagnetic checks the published theme—not a preview or unpublished copy."}
           </p>
           <div className={styles.actionRow}>
-            <Form method="post">
+            <Form method="post" target="_top">
               <input name="intent" type="hidden" value="open-theme-editor" />
               <input name="planId" type="hidden" value={view.plan.id} />
               <button className={styles.primaryButton} disabled={busy} type="submit">Open theme editor</button>
