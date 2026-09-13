@@ -36,6 +36,7 @@ import {
   loadV2TestStoreCutoverReceipt,
   recordAuthenticatedV2ThemeEvidence,
   recordOperatorV2QaEvidence,
+  recoverSelectedTestStoreV2AfterReinstall,
   releaseSelectedTestStoreV2CutoverHold,
   reviseSelectedTestStoreV2CutoverProduct,
 } from "../app/services/test-store-cutover.server";
@@ -223,6 +224,73 @@ async function cutoverAndPrepare(db: PrismaClient, suffix: string) {
     approved,
   };
 }
+
+test("post-uninstall recovery preserves history and prepares only fresh unapproved authority", async () => {
+  const fixture = testDatabase();
+  try {
+    const prior = await cutoverAndPrepare(fixture.db, "reinstall-recovery");
+    const oldApproval = prior.approved.approvalRecordJson;
+    await fixture.db.autopilotPlan.update({
+      where: { id: prior.approved.id },
+      data: { state: "INVALIDATED" },
+    });
+    await fixture.db.session.create({ data: {
+      id: "reinstalled-session", shop: prior.merchant.shop, state: "state",
+      accessToken: "token", isOnline: false,
+    } });
+    await fixture.db.pixelCredential.create({ data: {
+      merchantId: prior.merchant.id, tokenHash: hashPixelToken("reinstalled-pixel-token-at-least-32-characters"),
+      endpoint: "https://example.test/events", status: "ACTIVE",
+    } });
+    const recover = (idempotencyKey = "v2-reinstall:recovery") =>
+      recoverSelectedTestStoreV2AfterReinstall({
+        db: fixture.db, merchantId: prior.merchant.id, shop: prior.merchant.shop,
+        planId: prior.approved.id, priorReceiptId: prior.cutover.receipt.id,
+        actor: "operator:test", idempotencyKey,
+        now: new Date(BASE.getTime() + 5_000),
+      });
+    await assert.rejects(recover(), /V2_REINSTALL_OTHER_HOLD_ACTIVE/);
+    await fixture.db.runtimeControl.update({
+      where: { merchantId: prior.merchant.id },
+      data: { killSwitch: false, reason: null, clearedBy: "owner:test", clearedAt: new Date(BASE.getTime() + 4_500) },
+    });
+    const active = await fixture.db.experiment.create({ data: {
+      merchantId: prior.merchant.id, productId: prior.product.id,
+      key: "unsafe-active", salt: "unsafe-active-salt", status: "ACTIVE",
+    } });
+    await assert.rejects(recover(), /V2_REINSTALL_ACTIVE_AUTHORITY_PRESENT/);
+    await fixture.db.experiment.update({ where: { id: active.id }, data: { status: "PAUSED" } });
+
+    const recovered = await recover();
+    assert.equal(recovered.replayed, false);
+    assert.equal(recovered.scope.priorReceiptId, prior.cutover.receipt.id);
+    const replay = await recover();
+    assert.equal(replay.replayed, true);
+    assert.equal(replay.receipt.id, recovered.receipt.id);
+    const retained = await fixture.db.autopilotPlan.findUniqueOrThrow({ where: { id: prior.approved.id } });
+    assert.equal(retained.state, "INVALIDATED");
+    assert.equal(retained.approvalRecordJson, oldApproval);
+    const runtime = await fixture.db.runtimeControl.findUniqueOrThrow({ where: { merchantId: prior.merchant.id } });
+    assert.equal(runtime.killSwitch, true);
+    assert.equal(runtime.reason, recovered.scope.holdReason);
+
+    const prepared = await prepareAutopilotOpportunity({
+      db: fixture.db, merchantId: prior.merchant.id, actor: "system:test-reinstall",
+      preferredProductId: prior.product.id, cutoverReceiptId: recovered.receipt.id,
+      now: new Date(BASE.getTime() + 6_000),
+    });
+    assert.equal(prepared.status, "READY");
+    if (prepared.status !== "READY") throw new Error("fresh plan missing");
+    assert.notEqual(prepared.plan.id, prior.approved.id);
+    assert.equal(prepared.plan.approvedAt, null);
+    assert.equal(prepared.plan.approvalRecordJson, null);
+    assert.equal(prepared.plan.cutoverReceiptId, recovered.receipt.id);
+    assert.equal(await fixture.db.experiment.count({ where: { merchantId: prior.merchant.id, status: "ACTIVE" } }), 0);
+    assert.equal(await fixture.db.activeDeployment.count({ where: { merchantId: prior.merchant.id } }), 0);
+  } finally {
+    await fixture.close();
+  }
+});
 
 test("selected-store permission is an exact allowlist rather than a global v2 flag", () => {
   const environment = {

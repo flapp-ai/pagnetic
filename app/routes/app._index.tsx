@@ -52,6 +52,7 @@ import {
   loadSourceInvalidatedLegacyCutoverCandidate,
   loadV2TestStoreCutoverReceipt,
   recordAuthenticatedV2ThemeEvidence,
+  recoverSelectedTestStoreV2AfterReinstall,
   releaseSelectedTestStoreV2CutoverHold,
   reviseSelectedTestStoreV2CutoverProduct,
   V2_TEST_STORE_CUTOVER_ACTION,
@@ -171,6 +172,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     receiptId: string;
     product: { id: string; title: string; status: string };
   } = null;
+  let v2ReinstallRecovery: null | {
+    planId: string;
+    receiptId: string;
+    productId: string;
+    productTitle: string;
+  } = null;
   let v2SourceInvalidatedCutover = false;
   let v2QaProgress: null | {
     acceptedChecks: string[];
@@ -252,6 +259,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   if (
     v2CutoverSelected &&
+    view.plan?.state === "INVALIDATED" &&
+    view.plan.orchestrationProtocolVersion === MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION &&
+    view.plan.cutoverReceiptId &&
+    view.product
+  ) {
+    const [runtime, pixel, sessionCount, activeExperiments, activeDeployments] = await Promise.all([
+      prisma.runtimeControl.findUnique({ where: { merchantId: merchant.id } }),
+      prisma.pixelCredential.findUnique({ where: { merchantId: merchant.id } }),
+      prisma.session.count({ where: { shop: session.shop } }),
+      prisma.experiment.count({ where: { merchantId: merchant.id, status: "ACTIVE" } }),
+      prisma.activeDeployment.count({ where: { merchantId: merchant.id } }),
+    ]);
+    if (runtime && !runtime.killSwitch && runtime.reason === null && pixel?.status === "ACTIVE" && sessionCount && !activeExperiments && !activeDeployments) {
+      v2ReinstallRecovery = {
+        planId: view.plan.id,
+        receiptId: view.plan.cutoverReceiptId,
+        productId: view.product.id,
+        productTitle: view.product.title,
+      };
+    }
+  }
+  if (
+    v2CutoverSelected &&
     view.plan?.orchestrationProtocolVersion ===
       MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION &&
     view.plan.cutoverReceiptId
@@ -302,6 +332,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     v2Enabled: mvpV2EnabledForShop(session.shop),
     v2QaProgress,
     v2PreparationRetry,
+    v2ReinstallRecovery,
     v2Reselection,
     themeEditorUrl: themeEditorDeepLink(
       session.shop,
@@ -463,6 +494,35 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return {
         ok: true,
         message: `Fresh source-backed preparation is queued for ${product.title}.`,
+      };
+    }
+    if (intent === "recover-v2-after-reinstall") {
+      assertSelectedV2CutoverShop({ shop: session.shop });
+      if (String(formData.get("confirmation") ?? "") !== "recover-v2-after-reinstall")
+        throw new Error("V2_REINSTALL_EXPLICIT_CONFIRMATION_REQUIRED");
+      const planId = String(formData.get("planId") ?? "");
+      const priorReceiptId = String(formData.get("priorReceiptId") ?? "");
+      await syncProducts({
+        db: prisma, shop: session.shop, actor,
+        graphql: (query) => admin.graphql(query),
+      });
+      const result = await recoverSelectedTestStoreV2AfterReinstall({
+        db: prisma, merchantId: merchant.id, shop: session.shop, planId,
+        priorReceiptId, actor,
+        idempotencyKey: `v2-reinstall:${planId}:${priorReceiptId}`,
+      });
+      await enqueueAutopilotPreparation({
+        db: prisma, merchantId: merchant.id, shop: session.shop,
+        endpoint: `${publicAppOrigin(request)}/storefront/events`,
+        preferredProductId: result.scope.productId,
+        cutoverReceiptId: result.receipt.id,
+        explicitRetry: true,
+      });
+      return {
+        ok: true,
+        message: result.replayed
+          ? "Post-reinstall recovery is already recorded; preparation remains safely queued."
+          : "Post-reinstall recovery recorded. Fresh source-backed preparation is queued and requires a new approval.",
       };
     }
     if (intent === "approve-plan") {
@@ -911,6 +971,23 @@ export function DashboardView({
           ) : (
             <p>No other active synced product is available. Publish or activate a genuinely source-rich test product in Shopify, then reload this page.</p>
           )}
+        </section>
+      ) : null}
+
+      {data.v2ReinstallRecovery ? (
+        <section className={styles.section} aria-labelledby="v2-reinstall-recovery-title">
+          <p className={styles.step}>Reinstall recovery</p>
+          <h2 id="v2-reinstall-recovery-title">Prepare a fresh plan after reinstall</h2>
+          <p>The invalidated plan and its approval remain in history. Recovery restores the selected-product safety hold and prepares new source-bound authority; it does not activate an experiment.</p>
+          <Form method="post">
+            <input name="intent" type="hidden" value="recover-v2-after-reinstall" />
+            <input name="confirmation" type="hidden" value="recover-v2-after-reinstall" />
+            <input name="planId" type="hidden" value={data.v2ReinstallRecovery.planId} />
+            <input name="priorReceiptId" type="hidden" value={data.v2ReinstallRecovery.receiptId} />
+            <button className={styles.secondaryButton} disabled={busy} type="submit">
+              Recover {data.v2ReinstallRecovery.productTitle}
+            </button>
+          </Form>
         </section>
       ) : null}
 

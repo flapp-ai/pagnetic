@@ -898,6 +898,108 @@ export async function reviseSelectedTestStoreV2CutoverProduct(args: {
   });
 }
 
+export async function recoverSelectedTestStoreV2AfterReinstall(args: {
+  db: PrismaClient;
+  merchantId: string;
+  shop: string;
+  planId: string;
+  priorReceiptId: string;
+  actor: string;
+  idempotencyKey: string;
+  now?: Date;
+}) {
+  const key = validKey(args.idempotencyKey);
+  const now = args.now ?? new Date();
+  return args.db.$transaction(async (tx) => {
+    const merchant = await tx.merchant.findFirst({
+      where: { id: args.merchantId, shop: args.shop },
+      select: { id: true },
+    });
+    if (!merchant) throw new Error("V2_REINSTALL_TENANT_MISMATCH");
+    const session = await tx.session.findFirst({ where: { shop: args.shop } });
+    const pixel = await tx.pixelCredential.findUnique({
+      where: { merchantId: args.merchantId },
+    });
+    if (!session || pixel?.status !== "ACTIVE")
+      throw new Error("V2_REINSTALL_NOT_VERIFIED");
+    const plan = await tx.autopilotPlan.findFirst({
+      where: {
+        id: args.planId,
+        merchantId: args.merchantId,
+        state: "INVALIDATED",
+        orchestrationProtocolVersion: MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION,
+        cutoverReceiptId: args.priorReceiptId,
+      },
+      include: { product: true },
+    });
+    if (!plan) throw new Error("V2_REINSTALL_INVALIDATED_PLAN_REQUIRED");
+    const prior = await loadV2TestStoreCutoverReceipt({
+      db: tx,
+      merchantId: args.merchantId,
+      receiptId: args.priorReceiptId,
+      productId: plan.productId,
+      requireCurrentSource: true,
+    });
+    const holdReason = `${CUTOVER_HOLD_PREFIX}${key}`;
+    const scope: V2TestStoreCutoverReceipt = {
+      schemaVersion: 2,
+      merchantId: args.merchantId,
+      productId: plan.productId,
+      legacyPlanId: prior.scope.legacyPlanId,
+      legacyPlanHash: prior.scope.legacyPlanHash,
+      sourceVersion: plan.product.sourceVersion,
+      sourceHash: plan.product.sourceHash,
+      targetOrchestrationProtocolVersion: MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION,
+      holdReason,
+      priorReceiptId: prior.receipt.id,
+    };
+    const inputHash = digest(canonicalQueuePayload(receiptMaterial(scope)));
+    const replay = await tx.actionReceipt.findUnique({
+      where: { merchantId_idempotencyKey: { merchantId: args.merchantId, idempotencyKey: key } },
+    });
+    if (replay) {
+      if (replay.action !== V2_TEST_STORE_CUTOVER_ACTION || replay.inputHash !== inputHash)
+        throw new QueueIdempotencyConflictError();
+      return { receipt: replay, scope: parseReceipt(replay.responseRef), replayed: true };
+    }
+    const latest = await tx.actionReceipt.findFirst({
+      where: { merchantId: args.merchantId, action: V2_TEST_STORE_CUTOVER_ACTION },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { id: true },
+    });
+    if (latest?.id !== prior.receipt.id)
+      throw new Error("V2_CUTOVER_RECEIPT_SUPERSEDED");
+    const runtime = await tx.runtimeControl.findUnique({
+      where: { merchantId: args.merchantId },
+    });
+    if (!runtime || runtime.killSwitch || runtime.reason !== null)
+      throw new Error("V2_REINSTALL_OTHER_HOLD_ACTIVE");
+    const [activeExperiments, activeDeployments] = await Promise.all([
+      tx.experiment.count({ where: { merchantId: args.merchantId, status: "ACTIVE" } }),
+      tx.activeDeployment.count({ where: { merchantId: args.merchantId } }),
+    ]);
+    if (activeExperiments || activeDeployments)
+      throw new Error("V2_REINSTALL_ACTIVE_AUTHORITY_PRESENT");
+    const receipt = await tx.actionReceipt.create({ data: {
+      merchantId: args.merchantId, actor: args.actor,
+      action: V2_TEST_STORE_CUTOVER_ACTION, idempotencyKey: key,
+      inputHash, responseRef: canonicalQueuePayload(scope), createdAt: now,
+    } });
+    await tx.runtimeControl.update({
+      where: { merchantId: args.merchantId },
+      data: { killSwitch: true, reason: holdReason, activatedBy: args.actor, activatedAt: now, clearedBy: null, clearedAt: null },
+    });
+    await tx.auditLog.create({ data: {
+      merchantId: args.merchantId, actor: args.actor,
+      action: "V2_POST_UNINSTALL_RECOVERY_RECORDED", resourceType: "ACTION_RECEIPT",
+      resourceId: receipt.id,
+      detailsJson: canonicalQueuePayload({ priorReceiptId: prior.receipt.id, invalidatedPlanId: plan.id, productId: plan.productId }),
+      createdAt: now,
+    } });
+    return { receipt, scope, replayed: false };
+  });
+}
+
 function templateSuffix(sourceSnapshot: string) {
   try {
     const source = JSON.parse(sourceSnapshot) as { templateSuffix?: unknown };

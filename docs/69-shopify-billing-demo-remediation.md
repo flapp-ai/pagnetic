@@ -5,6 +5,14 @@ Status: IN PROGRESS — do not mark reviewer findings resolved until live eviden
 
 ## Sep13 continuation scope
 
+### Owner-approved uninstall-pause recovery
+
+The owner explicitly approved clearing only test1's `App uninstalled` pause to rebuild setup. A fresh independent snapshot confirmed that exact reason, zero active experiments/deployments, and the invalidated selected v2 plan. Root used the authenticated Operations **Clear kill switch** action; UI confirmed **Kill switch cleared. Experiments remain paused until explicitly relaunched.** No other hold, experiment or billing control was changed.
+
+The subsequent Overview reload exposed a real recovery gap: the existing selected-product Retry UI handles invalidated legacy plans, not this already-v2 invalidated plan. Generic preparation is blocked by the retained cutover receipt. A bounded explicit **Recover after reinstall** action is being implemented to preserve the old immutable history, create a newly linked receipt/preparation, and require fresh plan approval. No direct database plan resurrection or implicit approval is permitted. This supersedes the unanswered-pause notes below.
+
+The recovery implementation adds an authenticated owner/operator action limited to the selected shop. It verifies installed session/active pixel, exact invalidated v2 plan and current source-bound receipt, already-cleared runtime and no active experiment/deployment. A new linked immutable receipt restores the selected-product preparation hold; the ordinary receipt-bound preparation path produces a distinct unapproved plan. Exact replay reuses the receipt, and neither the old plan nor its approval is rewritten. Focused cutover tests11/11, TypeScript, targeted ESLint and diff validation pass. Deployment and live recovery outcome are recorded separately below.
+
 Owner's “go on” authorizes the pending test1-only v2 testing request, with Original and safety holds retained; it does not authorize experiment activation. Fresh browser inspection confirms Overview still reports `AUTOPILOT_PREPARATION_INACTIVE`, while the exact campaign message and package `031bd66c…535898` remain APPROVED after reinstall.
 
 Pre-enablement inspection found the current `PAGNETIC_V2_ENABLED` switch is process-global; `PAGNETIC_V2_CUTOVER_SHOPS` restricts cutover actions, not all decision/orchestration/ingestion paths. A strict runtime per-shop gate is being added before enabling anything. The sole current Merchant row does not substitute for durable tenant isolation.
