@@ -904,6 +904,8 @@ export async function recoverSelectedTestStoreV2AfterReinstall(args: {
   shop: string;
   planId: string;
   priorReceiptId: string;
+  expectedSourceVersion: string;
+  expectedSourceHash: string;
   actor: string;
   idempotencyKey: string;
   now?: Date;
@@ -938,8 +940,12 @@ export async function recoverSelectedTestStoreV2AfterReinstall(args: {
       merchantId: args.merchantId,
       receiptId: args.priorReceiptId,
       productId: plan.productId,
-      requireCurrentSource: true,
     });
+    if (
+      plan.product.sourceVersion !== args.expectedSourceVersion ||
+      plan.product.sourceHash !== args.expectedSourceHash
+    )
+      throw new Error("V2_REINSTALL_SOURCE_CHANGED");
     const holdReason = `${CUTOVER_HOLD_PREFIX}${key}`;
     const scope: V2TestStoreCutoverReceipt = {
       schemaVersion: 2,

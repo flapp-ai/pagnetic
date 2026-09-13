@@ -234,6 +234,20 @@ test("post-uninstall recovery preserves history and prepares only fresh unapprov
       where: { id: prior.approved.id },
       data: { state: "INVALIDATED" },
     });
+    const currentSourceVersion = "2026-09-13T00:00:00Z";
+    const currentSourceHash = hashValue("post-reinstall-current-catalog");
+    await fixture.db.product.update({
+      where: { id: prior.product.id },
+      data: { sourceVersion: currentSourceVersion, sourceHash: currentSourceHash },
+    });
+    await fixture.db.sourceDocument.updateMany({
+      where: { productId: prior.product.id },
+      data: { sourceVersion: currentSourceVersion },
+    });
+    await fixture.db.evidenceObject.updateMany({
+      where: { productId: prior.product.id },
+      data: { sourceVersion: currentSourceVersion },
+    });
     await fixture.db.session.create({ data: {
       id: "reinstalled-session", shop: prior.merchant.shop, state: "state",
       accessToken: "token", isOnline: false,
@@ -242,10 +256,15 @@ test("post-uninstall recovery preserves history and prepares only fresh unapprov
       merchantId: prior.merchant.id, tokenHash: hashPixelToken("reinstalled-pixel-token-at-least-32-characters"),
       endpoint: "https://example.test/events", status: "ACTIVE",
     } });
-    const recover = (idempotencyKey = "v2-reinstall:recovery") =>
+    const recover = (
+      idempotencyKey = "v2-reinstall:recovery",
+      expectedSourceVersion = currentSourceVersion,
+      expectedSourceHash = currentSourceHash,
+    ) =>
       recoverSelectedTestStoreV2AfterReinstall({
         db: fixture.db, merchantId: prior.merchant.id, shop: prior.merchant.shop,
         planId: prior.approved.id, priorReceiptId: prior.cutover.receipt.id,
+        expectedSourceVersion, expectedSourceHash,
         actor: "operator:test", idempotencyKey,
         now: new Date(BASE.getTime() + 5_000),
       });
@@ -260,10 +279,16 @@ test("post-uninstall recovery preserves history and prepares only fresh unapprov
     } });
     await assert.rejects(recover(), /V2_REINSTALL_ACTIVE_AUTHORITY_PRESENT/);
     await fixture.db.experiment.update({ where: { id: active.id }, data: { status: "PAUSED" } });
+    await assert.rejects(
+      recover("v2-reinstall:stale-display", prior.product.sourceVersion, prior.product.sourceHash),
+      /V2_REINSTALL_SOURCE_CHANGED/,
+    );
 
     const recovered = await recover();
     assert.equal(recovered.replayed, false);
     assert.equal(recovered.scope.priorReceiptId, prior.cutover.receipt.id);
+    assert.equal(recovered.scope.sourceVersion, currentSourceVersion);
+    assert.equal(recovered.scope.sourceHash, currentSourceHash);
     const replay = await recover();
     assert.equal(replay.replayed, true);
     assert.equal(replay.receipt.id, recovered.receipt.id);

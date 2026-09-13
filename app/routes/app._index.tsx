@@ -177,6 +177,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     receiptId: string;
     productId: string;
     productTitle: string;
+    expectedSourceVersion: string;
+    expectedSourceHash: string;
   } = null;
   let v2SourceInvalidatedCutover = false;
   let v2QaProgress: null | {
@@ -277,6 +279,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         receiptId: view.plan.cutoverReceiptId,
         productId: view.product.id,
         productTitle: view.product.title,
+        expectedSourceVersion: view.product.sourceVersion,
+        expectedSourceHash: view.product.sourceHash,
       };
     }
   }
@@ -502,6 +506,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         throw new Error("V2_REINSTALL_EXPLICIT_CONFIRMATION_REQUIRED");
       const planId = String(formData.get("planId") ?? "");
       const priorReceiptId = String(formData.get("priorReceiptId") ?? "");
+      const expectedSourceVersion = String(formData.get("expectedSourceVersion") ?? "");
+      const expectedSourceHash = String(formData.get("expectedSourceHash") ?? "");
       await syncProducts({
         db: prisma, shop: session.shop, actor,
         graphql: (query) => admin.graphql(query),
@@ -509,6 +515,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const result = await recoverSelectedTestStoreV2AfterReinstall({
         db: prisma, merchantId: merchant.id, shop: session.shop, planId,
         priorReceiptId, actor,
+        expectedSourceVersion, expectedSourceHash,
         idempotencyKey: `v2-reinstall:${planId}:${priorReceiptId}`,
       });
       await enqueueAutopilotPreparation({
@@ -984,6 +991,8 @@ export function DashboardView({
             <input name="confirmation" type="hidden" value="recover-v2-after-reinstall" />
             <input name="planId" type="hidden" value={data.v2ReinstallRecovery.planId} />
             <input name="priorReceiptId" type="hidden" value={data.v2ReinstallRecovery.receiptId} />
+            <input name="expectedSourceVersion" type="hidden" value={data.v2ReinstallRecovery.expectedSourceVersion} />
+            <input name="expectedSourceHash" type="hidden" value={data.v2ReinstallRecovery.expectedSourceHash} />
             <button className={styles.secondaryButton} disabled={busy} type="submit">
               Recover {data.v2ReinstallRecovery.productTitle}
             </button>
