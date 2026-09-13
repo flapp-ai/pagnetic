@@ -4,6 +4,8 @@ Current checkpoint2026-09-12: ACTION NEEDED; billing/reinstall repairs are live-
 
 ## Scoped test-store enablement — 2026-09-13
 
+Latest: owner approved and root cleared only test1's uninstall pause through Operations, without restarting experiments. Release46/source `db79aed` adds the missing already-v2 recovery action and safe fresh-catalog binding. Health passes; the real Recover action recorded receipt `cmtzd7f0k007kq6lafgyydxtc`. The normal worker completed preparation in one attempt; new plan `cmtzdcx1r00m1q6larwx71jys` is READY_FOR_APPROVAL and is visible in actual Overview. It has no approval; root did not click Approve. The replacement preparation hold is intentional; old approval remains immutable and no active experiment/deployment exists. Fresh plan approval, scoped QA, full screencast and Shopify resubmission remain incomplete. This supersedes the unanswered permission below; see doc69.
+
 Release43/source `42dd579a84e25a9cfb7922fb7180fa00888e9ab9` is deployed healthy. A new strict runtime allowlist enables v2 only for test1, independently of cutover permission; other stores fail closed. Affected tests63/63, TypeScript and production build pass. Actual published-page DOM confirms `KILL_SWITCH_ACTIVE`, hidden panel, no deployment and unmeasured Original fallback. Runtime independently confirms zero active experiments/deployments, intact uninstall hold and active canonical pixel. Backup verification/restore1487ms and28 current migrations passed. Clearing only the uninstall pause for fresh setup needs the separately requested owner answer; no hold or experiment was activated. The full video and resubmission remain pending.
 
 ## Owned-store reinstall recovery — 2026-09-12
