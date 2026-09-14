@@ -22,6 +22,10 @@ const {
   watchLease,
   validatePayload: validateRuntimePayloadV2,
   campaignRefFromLocation,
+  demoTokenFromLocation,
+  demoParameterPresent,
+  initializeDemo,
+  validateDemoPayload,
   render: renderV2,
 } = globalThis.PagneticAutopilotTest;
 
@@ -29,6 +33,17 @@ test("extracts only validated campaign references from storefront URLs", () => {
   assert.equal(campaignRefFromLocation("https://shop.test/products/bag?pag_campaign=abc-123&utm_source=ig"), "abc-123");
   assert.equal(campaignRefFromLocation("https://shop.test/products/bag?pag_campaign=bad%3Fvalue"), null);
   assert.equal(campaignRefFromLocation("https://shop.test/products/bag"), null);
+});
+
+test("recognizes only opaque demo contexts and never treats ordinary URLs as demo", () => {
+  assert.equal(
+    demoTokenFromLocation("https://test1-eczm2zce.myshopify.com/products/pouch?pagnetic_demo=abc.DEF-123"),
+    "abc.DEF-123",
+  );
+  assert.equal(demoTokenFromLocation("https://test1-eczm2zce.myshopify.com/products/pouch"), null);
+  assert.equal(demoTokenFromLocation("https://test1-eczm2zce.myshopify.com/products/pouch?pagnetic_demo=bad%20token"), null);
+  assert.equal(demoParameterPresent("https://test1-eczm2zce.myshopify.com/products/pouch?pagnetic_demo=bad%20token"), true);
+  assert.equal(demoParameterPresent("https://test1-eczm2zce.myshopify.com/products/pouch"), false);
 });
 
 test("normalizes explicit acquisition angles", () => {
@@ -194,6 +209,173 @@ test("v2 accepts only sourced panel content and explicit Original", () => {
     }),
     false,
   );
+});
+
+test("v2 demo accepts only the frozen synthetic contract and expiry", () => {
+  const content = {
+    schemaVersion: 2,
+    contentVersionId: "demo-content",
+    contentHash: "a".repeat(64),
+    headline: "Approved demo headline",
+    headlineEvidenceIds: ["evidence-1"],
+    benefits: [
+      { text: "Supported benefit one", evidenceIds: ["evidence-1"] },
+      { text: "Supported benefit two", evidenceIds: ["evidence-2"] },
+    ],
+    proofItems: [],
+    faq: [],
+    reassurance: null,
+  };
+  assert.equal(validateDemoPayload({
+    schemaVersion: 1,
+    serving: "DEMO_SYNTHETIC",
+    reason: "DEMO_ACTIVE",
+    demo: {
+      label: "Demo / synthetic test — not a live experiment",
+      generation: "generation-1",
+      leaseExpiresAt: "2099-01-01T00:00:00.000Z",
+    },
+    content,
+  }, Date.parse("2026-09-14T00:00:00.000Z")), true);
+  assert.equal(validateDemoPayload({
+    schemaVersion: 1,
+    serving: "DEMO_EXPIRED",
+    reason: "DEMO_EXPIRED",
+    demo: {
+      label: "Demo / synthetic test — not a live experiment",
+      generation: "generation-1",
+      leaseExpiresAt: "2020-01-01T00:00:00.000Z",
+    },
+    content,
+  }), false);
+  assert.equal(validateDemoPayload({
+    schemaVersion: 1,
+    serving: "DEMO_SYNTHETIC",
+    reason: "DEMO_STOPPED",
+    demo: {
+      label: "Demo / synthetic test — not a live experiment",
+      generation: "generation-1",
+      leaseExpiresAt: "2099-01-01T00:00:00.000Z",
+    },
+    content,
+  }), false);
+  assert.equal(validateDemoPayload({
+    schemaVersion: 1,
+    serving: "ORIGINAL",
+    reason: "DEMO_STOPPED",
+    demo: null,
+    content: null,
+  }), true);
+});
+
+test("demo request sends only signed context and genuine consent, never normal identity fields", async () => {
+  const prior = {
+    Shopify: globalThis.Shopify,
+    document: globalThis.document,
+    location: globalThis.location,
+    fetch: globalThis.fetch,
+  };
+  let request;
+  const panel = {
+    dataset: {
+      productId: "10345426977074",
+      runtimeEndpoint: "/apps/adaptive-storefront",
+    },
+    hidden: true,
+    replaceChildren() {},
+    closest: () => null,
+  };
+  try {
+    globalThis.Shopify = {
+      customerPrivacy: {
+        analyticsProcessingAllowed: () => true,
+        preferencesProcessingAllowed: () => true,
+      },
+    };
+    globalThis.location = {
+      hostname: "test1-eczm2zce.myshopify.com",
+      href: "https://test1-eczm2zce.myshopify.com/products/pouch?pagnetic_demo=signed.demo-token",
+    };
+    globalThis.document = {
+      hidden: false,
+      addEventListener() {},
+      removeEventListener() {},
+    };
+    globalThis.fetch = async (_url, options) => {
+      request = JSON.parse(options.body);
+      return {
+        ok: true,
+        json: async () => ({
+          schemaVersion: 1,
+          serving: "ORIGINAL",
+          reason: "DEMO_CONTEXT_INVALID",
+          demo: null,
+          content: null,
+        }),
+      };
+    };
+    await initializeDemo(panel, "signed.demo-token");
+    assert.deepEqual(request, {
+      schemaVersion: 1,
+      context: "signed.demo-token",
+      consent: { analytics: true, preferences: true },
+    });
+  } finally {
+    if (panel._pt) clearTimeout(panel._pt);
+    for (const [key, value] of Object.entries(prior)) {
+      if (value === undefined) delete globalThis[key];
+      else globalThis[key] = value;
+    }
+  }
+});
+
+test("demo initialization accepts the numeric Liquid product id and renders the provider label", async () => {
+  const prior = { Shopify: globalThis.Shopify, document: globalThis.document, location: globalThis.location, fetch: globalThis.fetch };
+  const content = {
+    schemaVersion: 2,
+    contentVersionId: "demo-content",
+    contentHash: "a".repeat(64),
+    headline: "Approved demo headline",
+    headlineEvidenceIds: ["evidence-1"],
+    benefits: [
+      { text: "Supported benefit one", evidenceIds: ["evidence-1"] },
+      { text: "Supported benefit two", evidenceIds: ["evidence-2"] },
+    ],
+    proofItems: [], faq: [], reassurance: null,
+  };
+  let rendered;
+  const createElement = (tagName) => ({
+    tagName: tagName.toUpperCase(), children: [], className: "", textContent: "",
+    appendChild(child) { this.children.push(child); },
+    setAttribute() {},
+    querySelector(selector) {
+      if (selector.startsWith(".") && this.className === selector.slice(1)) return this;
+      return this.children.map((child) => child.querySelector?.(selector)).find(Boolean) || null;
+    },
+  });
+  const panel = {
+    dataset: { productId: "10345426977074", runtimeEndpoint: "/apps/adaptive-storefront" },
+    hidden: true,
+    replaceChildren(value) { rendered = value; },
+    closest: () => null,
+  };
+  try {
+    globalThis.Shopify = { customerPrivacy: { analyticsProcessingAllowed: () => true, preferencesProcessingAllowed: () => true } };
+    globalThis.location = { hostname: "test1-eczm2zce.myshopify.com", href: "https://test1-eczm2zce.myshopify.com/products/pouch?pagnetic_demo=signed.demo-token" };
+    globalThis.document = { hidden: true, createElement, addEventListener() {}, removeEventListener() {} };
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({
+      schemaVersion: 1, serving: "DEMO_SYNTHETIC", reason: "DEMO_ACTIVE",
+      demo: { label: "Demo / synthetic test — not a live experiment", generation: "generation-1", leaseExpiresAt: "2099-01-01T00:00:00.000Z" }, content,
+    }) });
+    await initializeDemo(panel, "signed.demo-token");
+    assert.equal(panel.dataset.pagneticDemoGeneration, "generation-1");
+    assert.equal(rendered.querySelector(".adaptive-panel__demo-label").textContent, "Demo / synthetic test — not a live experiment");
+  } finally {
+    if (panel._pt) clearTimeout(panel._pt);
+    for (const [key, value] of Object.entries(prior)) {
+      if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
+    }
+  }
 });
 
 test("v2 renders bounded proof and FAQ as text with native disclosure semantics", () => {

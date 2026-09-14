@@ -79,6 +79,7 @@ model Merchant {
   deploymentVersions     DeploymentVersion[]
   activeDeployments      ActiveDeployment[]
   adaptivePackageReviews AdaptivePackageReview[]
+  testStoreDemoLease     TestStoreDemoLease?
   visitorOutcomes        VisitorOutcome[]
   webhookInbox           WebhookInbox[]
   orderLedger            OrderLedger[]
@@ -1412,6 +1413,18 @@ model ActionReceipt {
 
   @@unique([merchantId, idempotencyKey])
   @@index([merchantId, action, createdAt])
+}
+
+/// Singleton coordination only for the explicitly scoped synthetic test-store demo.
+/// Immutable start/stop evidence remains in ActionReceipt and AuditLog.
+model TestStoreDemoLease {
+  merchantId     String   @id
+  startReceiptId String   @unique
+  generation     String
+  expiresAt      DateTime
+  stoppedAt      DateTime?
+  updatedAt      DateTime @updatedAt
+  merchant       Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 }
 
 model EvaluationConsumption {

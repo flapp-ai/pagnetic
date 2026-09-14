@@ -11,9 +11,23 @@
   data-allow-qa-overrides="{{ block.settings.allow_qa_overrides }}"
   data-runtime-endpoint="{{ block.settings.runtime_endpoint | escape }}"
   data-block-version="adaptive-panel-v2"
+  data-demo-product-id="gid://shopify/Product/10345426977074"
   aria-live="polite"
   hidden
 ></div>
+
+<script>
+  (function pagneticDemoMarker() {
+    try {
+      var parsed = new URL(window.location.href);
+      if (parsed.hostname.toLowerCase() === "test1-eczm2zce.myshopify.com" && parsed.searchParams.has("pagnetic_demo")) {
+        var marker = JSON.stringify({ shop: "test1-eczm2zce.myshopify.com", expiresAt: Date.now() + 1800000 });
+        try { window.sessionStorage.setItem("pagnetic:v2:demo-mode", marker); }
+        catch (_sessionError) { try { window.localStorage.setItem("pagnetic:v2:demo-mode", marker); } catch (_localError) {} }
+      }
+    } catch (_error) {}
+  })();
+</script>
 
 <script src="{{ 'adaptive-vitals.js' | asset_url }}" defer="defer"></script>
 <script src="{{ 'adaptive-panel-v2.js' | asset_url }}" defer="defer"></script>

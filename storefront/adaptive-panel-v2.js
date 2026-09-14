@@ -4,6 +4,13 @@
   var VISITOR_TTL_MS = 90 * 24 * 60 * 60 * 1000;
   var SESSION_IDLE_MS = 30 * 60 * 1000;
   var LEASE_MS = 30 * 1000;
+  var DEMO_SHOP = "test1-eczm2zce.myshopify.com";
+  var DEMO_PRODUCT = "10345426977074";
+  var DEMO_LABEL = "Demo / synthetic test — not a live experiment";
+  var DEMO_REASONS = [
+    "DEMO_ACTIVE", "DEMO_CONTEXT_INVALID", "DEMO_EXPIRED", "DEMO_STOPPED",
+    "DEMO_CONSENT_REQUIRED", "DEMO_AUTHORITY_CHANGED", "DEMO_INTERNAL_FAILURE",
+  ];
 
   function validString(value, maximum) {
     return typeof value === "string" && value.length > 0 && value.length <= maximum;
@@ -16,6 +23,27 @@
     } catch (_error) {
       return null;
     }
+  }
+
+  function demoTokenFromLocation(location) {
+    try {
+      var value = new URL(String(location || ""), "https://shopify.invalid").searchParams.get("pagnetic_demo");
+      return /^[A-Za-z0-9._~:-]{1,2000}$/.test(value || "") ? value : null;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function demoParameterPresent(location) {
+    try {
+      return new URL(String(location || ""), "https://shopify.invalid").searchParams.has("pagnetic_demo");
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function demoPage(location) {
+    return Boolean(demoTokenFromLocation(location));
   }
 
   function randomId(prefix) {
@@ -160,7 +188,10 @@
     if (payload.assignmentId && ["ORIGINAL", "MATCHED"].indexOf(payload.assignmentArm) === -1)
       return false;
     if (payload.serving === "ORIGINAL") return payload.content === null;
-    var content = payload.content;
+    return validateContent(payload.content);
+  }
+
+  function validateContent(content) {
     return Boolean(
       content && content.schemaVersion === 2 &&
       validString(content.contentVersionId, 160) &&
@@ -174,6 +205,21 @@
         return benefit && validString(benefit.text, 220) &&
           Array.isArray(benefit.evidenceIds) && benefit.evidenceIds.length > 0;
       })
+    );
+  }
+
+  function validateDemoPayload(payload, now) {
+    if (!payload || payload.schemaVersion !== 1 ||
+        ["ORIGINAL", "DEMO_SYNTHETIC"].indexOf(payload.serving) === -1 ||
+        DEMO_REASONS.indexOf(payload.reason) === -1) return false;
+    if (payload.serving === "ORIGINAL") return payload.content === null && payload.demo === null;
+    var demo = payload.demo;
+    var expiresAt = demo && Date.parse(demo.leaseExpiresAt || "");
+    return Boolean(
+      payload.reason === "DEMO_ACTIVE" &&
+      demo && demo.label === DEMO_LABEL && validString(demo.generation, 160) &&
+      Number.isFinite(expiresAt) && expiresAt > (Number.isFinite(now) ? now : Date.now()) &&
+      validateContent(payload.content)
     );
   }
 
@@ -193,6 +239,8 @@
     var headingId = "adaptive-heading-" + (panel.dataset.blockId || randomId("block"));
     article.setAttribute("aria-labelledby", headingId);
     appendText(article, "p", "adaptive-panel__eyebrow", "Product highlights");
+    if (payload.demo && payload.demo.label === DEMO_LABEL)
+      appendText(article, "p", "adaptive-panel__demo-label", payload.demo.label);
     var heading = appendText(article, "h2", "adaptive-panel__heading", content.headline);
     heading.id = headingId;
     var list = root.document.createElement("ul");
@@ -253,6 +301,41 @@
       if (!generationIsCurrent(panel, generation)) throw codedError("stale_generation");
       if (privacyState().status !== "allowed") throw codedError("consent_revoked");
       if (!validatePayload(payload)) throw codedError("invalid_response");
+      return payload;
+    } finally {
+      root.clearTimeout(timeout);
+      if (panel._pa === controller) panel._pa = null;
+    }
+  }
+
+  async function fetchDemoPayload(panel, context, generation) {
+    var privacy = await loadPrivacyState();
+    if (!privacy.analyticsAllowed || !privacy.preferencesAllowed)
+      throw codedError("consent_unavailable");
+    var controller = typeof AbortController === "function" ? new AbortController() : null;
+    panel._pa = controller;
+    var timeout = root.setTimeout(function abortSlowDemoRequest() {
+      if (controller) controller.abort();
+    }, 1500);
+    try {
+      var endpoint = safeEndpoint(panel.dataset.runtimeEndpoint).replace(/\/$/, "") + "/demo/v1";
+      var response = await root.fetch(endpoint, {
+        method: "POST", credentials: "same-origin",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({
+          schemaVersion: 1,
+          context: context,
+          consent: { analytics: true, preferences: true },
+        }),
+        signal: controller ? controller.signal : undefined,
+      });
+      if (!response.ok) throw codedError("http_" + response.status);
+      var payload = await response.json();
+      if (!generationIsCurrent(panel, generation)) throw codedError("stale_generation");
+      var currentPrivacy = await loadPrivacyState();
+      if (!currentPrivacy.analyticsAllowed || !currentPrivacy.preferencesAllowed)
+        throw codedError("consent_revoked");
+      if (!validateDemoPayload(payload)) throw codedError("invalid_demo_response");
       return payload;
     } finally {
       root.clearTimeout(timeout);
@@ -350,6 +433,16 @@
     if (!root.document || panel.dataset.pc === "true") return;
     panel.dataset.pc = "true";
     root.document.addEventListener("visitorConsentCollected", function consentChanged() {
+      if (panel.dataset.pagneticDemo === "true") {
+        if (privacyState().status !== "allowed") {
+          panel.dataset.pi = "false";
+          deactivate(panel, "DEMO_CONSENT_REQUIRED", false);
+        } else if (panel.dataset.pi !== "true") {
+          var context = demoTokenFromLocation(root.location && root.location.href);
+          if (context) initializeDemo(panel, context);
+        }
+        return;
+      }
       if (privacyState().status === "allowed") {
         if (panel.dataset.pi !== "true") initialize(panel);
         return;
@@ -409,8 +502,98 @@
     }
   }
 
+  function watchDemoLease(panel, context, payload, generation) {
+    var checking = false;
+    var activePayload = payload;
+    function schedule() {
+      if (!generationIsCurrent(panel, generation)) return;
+      var expiresAt = Date.parse(activePayload.demo.leaseExpiresAt || "");
+      var remaining = expiresAt - Date.now();
+      if (!Number.isFinite(remaining) || remaining <= 0) {
+        deactivate(panel, "DEMO_EXPIRED", false);
+        return;
+      }
+      panel._pt = root.setTimeout(recheck, Math.min(LEASE_MS, remaining));
+      panel.dataset.pl = "true";
+    }
+    async function recheck() {
+      if (!generationIsCurrent(panel, generation) || checking) return;
+      if (root.document && root.document.hidden) return;
+      checking = true;
+      suspendForLease(panel);
+      try {
+        var current = await fetchDemoPayload(panel, context, generation);
+        if (!generationIsCurrent(panel, generation)) return;
+        if (current.serving !== "DEMO_SYNTHETIC" ||
+            current.demo.generation !== activePayload.demo.generation) {
+          deactivate(panel, current.reason || "DEMO_AUTHORITY_CHANGED", false);
+          return;
+        }
+        activePayload = current;
+        render(panel, current);
+        panel.dataset.adaptiveReason = current.reason;
+        checking = false;
+        schedule();
+      } catch (error) {
+        if (!generationIsCurrent(panel, generation)) return;
+        deactivate(panel, error && (error.adaptiveCode === "consent_revoked" || error.adaptiveCode === "consent_unavailable")
+          ? "DEMO_CONSENT_REQUIRED" : "DEMO_INTERNAL_FAILURE", false);
+      }
+    }
+    schedule();
+    if (root.document) {
+      panel._pv = function onDemoVisibility() {
+        if (!root.document.hidden) recheck();
+      };
+      root.document.addEventListener("visibilitychange", panel._pv);
+    }
+  }
+
+  async function initializeDemo(panel, context) {
+    var generation = beginGeneration(panel);
+    panel.dataset.pi = "true";
+    panel.hidden = true;
+    installConsentWatcher(panel);
+    var hostname = String(root.location && root.location.hostname || "").toLowerCase();
+    var productId = String(panel.dataset.productId || "");
+    if (hostname !== DEMO_SHOP ||
+        (productId !== DEMO_PRODUCT && productId !== "gid://shopify/Product/" + DEMO_PRODUCT)) {
+      deactivate(panel, "DEMO_CONTEXT_INVALID", false);
+      return;
+    }
+    try {
+      var payload = await fetchDemoPayload(panel, context, generation);
+      if (!generationIsCurrent(panel, generation)) return;
+      if (payload.serving !== "DEMO_SYNTHETIC") {
+        deactivate(panel, payload.reason, false);
+        return;
+      }
+      panel.dataset.adaptiveReason = payload.reason;
+      panel.dataset.adaptiveMeasured = "false";
+      panel.dataset.pagneticDemoGeneration = payload.demo.generation;
+      render(panel, payload);
+      watchDemoLease(panel, context, payload, generation);
+    } catch (error) {
+      if (!generationIsCurrent(panel, generation)) return;
+      panel.dataset.pi = "false";
+      deactivate(panel, error && (error.adaptiveCode === "consent_revoked" || error.adaptiveCode === "consent_unavailable")
+        ? "DEMO_CONSENT_REQUIRED" : "DEMO_INTERNAL_FAILURE", false);
+    }
+  }
+
   async function initialize(panel) {
     if (!panel || panel.dataset.pi === "true") return;
+    var demoContext = demoTokenFromLocation(root.location && root.location.href);
+    if (demoParameterPresent(root.location && root.location.href)) {
+      panel.dataset.pagneticDemo = "true";
+      if (!demoContext) {
+        panel.dataset.pi = "true";
+        deactivate(panel, "DEMO_CONTEXT_INVALID", false);
+      } else {
+        await initializeDemo(panel, demoContext);
+      }
+      return;
+    }
     var generation = beginGeneration(panel);
     panel.dataset.pi = "true";
     panel.hidden = true;
@@ -491,6 +674,11 @@
     deactivate: deactivate,
     watchLease: watchLease,
     campaignRefFromLocation: campaignRefFromLocation,
+    demoTokenFromLocation: demoTokenFromLocation,
+    demoParameterPresent: demoParameterPresent,
+    validateDemoPayload: validateDemoPayload,
+    demoPage: demoPage,
+    initializeDemo: initializeDemo,
     render: render,
   };
 

@@ -48,7 +48,7 @@ function artifactReference(label: string) {
   return `qa-artifact:v1:${createHash("sha256").update(label).digest("hex")}`;
 }
 
-function testDatabase() {
+export function testDatabase() {
   const directory = mkdtempSync(path.join(tmpdir(), "pagnetic-v2-cutover-"));
   const databasePath = path.join(directory, "test.sqlite");
   for (const migration of readdirSync("prisma/migrations")
@@ -71,9 +71,9 @@ function testDatabase() {
   };
 }
 
-async function legacyFixture(db: PrismaClient, suffix: string) {
+async function legacyFixture(db: PrismaClient, suffix: string, exact?: { shop: string; productId: string; shopifyProductId: string }) {
   const merchant = await db.merchant.create({
-    data: { shop: `cutover-${suffix}.myshopify.com` },
+    data: { shop: exact?.shop ?? `cutover-${suffix}.myshopify.com` },
   });
   await db.pilotRole.create({
     data: {
@@ -103,13 +103,14 @@ async function legacyFixture(db: PrismaClient, suffix: string) {
   });
   const product = await db.product.create({
     data: {
+      ...(exact ? { id: exact.productId } : {}),
       merchantId: merchant.id,
-      shopifyProductId: `gid://shopify/Product/${suffix}`,
+      shopifyProductId: exact?.shopifyProductId ?? `gid://shopify/Product/${suffix}`,
       title: "Trail Runner",
       handle: `trail-runner-${suffix}`,
       status: "ACTIVE",
       sourceVersion: BASE.toISOString(),
-      sourceHash: `source-${suffix}`,
+      sourceHash: exact ? hashValue(`source-${suffix}`) : `source-${suffix}`,
       sourceSnapshot,
       syncedAt: BASE,
     },
@@ -182,8 +183,8 @@ async function legacyFixture(db: PrismaClient, suffix: string) {
   return { merchant, product, approved };
 }
 
-async function cutoverAndPrepare(db: PrismaClient, suffix: string) {
-  const legacy = await legacyFixture(db, suffix);
+export async function cutoverAndPrepare(db: PrismaClient, suffix: string, exact?: { shop: string; productId: string; shopifyProductId: string }) {
+  const legacy = await legacyFixture(db, suffix, exact);
   const originalApproval = legacy.approved.approvalRecordJson;
   const cutover = await beginSelectedTestStoreV2Cutover({
     db,

@@ -42,7 +42,39 @@ These are observations/draft artifacts, not seven accepted QA receipts. No priva
 
 ## Unresolved substantive checks
 
-- **Consent:** current US storefront did not expose a consent banner. Denied/unknown, allowed/late-grant and revoke must be exercised through Shopify's real consent mechanism. Owner was asked for permission to enable the banner on test1 including US visitors; no answer received and no privacy settings changed at this checkpoint. An allowed Original decision alone is not a consent-flow pass.
+- **Consent:** owner subsequently approved enabling test1's banner, including US visitors. Configuration and real native interaction evidence are recorded below. One initial late-grant runtime failure remains unexplained; the consent artifact is not formally accepted.
 - **Performance:** PRD24 section13.2 requires representative before/after LCP/INP/CLS, decision deadlines, device/geography evidence and twice-forecast mixed-load validation. A tiny synthetic run or layout screenshot cannot close these gates. No performance PASS, arbitrary capacity claim or baseline activation was fabricated.
 
 All seven manual QA keys remain unaccepted. Keep the recovery hold and Original serving until the required evidence is reviewed. A test-only change to acceptance requirements would be a separate explicit product decision, not permission implied by today's draft/QA approval. The final end-to-end demo and Shopify resubmission remain pending.
+
+## Owner-approved native consent QA continuation — 2026-09-13
+
+Changed only test1 Customer privacy > Cookie banner. Disabled automated regional selection and saved explicit regions. Initial selection retained 31 European entries and added all 51 US entries; the banner did not initially appear on the normal product. To remove test-session geography ambiguity, selected all six continent groups, verified **299/299 entries**, clicked Done and Save. Saved admin summary shows Afghanistan, Åland Islands and 235 other country groups, automated settings off and no unsaved controls. Checkout banner setting was left unchanged/off. No other store, theme, billing, runtime flag or hold was changed.
+
+Shopify-generated preview displayed a banner, but its initial Decline did not establish denied behavior on the normal product. That preview interaction is excluded from consent evidence. Subsequently the native policies/preferences page and **normal product URL without preview parameters** both displayed the real banner and footer Cookie preferences control.
+
+| Ordered native interaction | Actual DOM-backed result |
+| --- | --- |
+| Normal product before new choice | Panel hidden, `consent_denied`, `measured=false`; banner visible. This is pre-choice UI evidence, not proof that the Customer Privacy API was unavailable. |
+| Decline | Banner dismissed; panel hidden, `consent_denied`, unmeasured, no deployment. |
+| Cookie preferences: Personalization only, Save my choices | Still hidden/denied/unmeasured. |
+| Same-page enable Analytics too, marketing off, Save my choices | First attempt hidden `runtime_failure_safe`, unmeasured. Failure-code attribute was not captured at that moment; cause is unconfirmed. |
+| Reopen preferences | Native checkboxes confirmed Personalization=1, Analytics=1, Marketing=0. |
+| Decline all, then reload | `consent_denied` both immediately and after reload, hidden/unmeasured. |
+| Same-page Accept all, then reload | Both returned expected `KILL_SWITCH_ACTIVE`, hidden/unmeasured under the retained recovery hold. |
+| Repeat exact Personalization-only -> add Analytics transition | Returned expected `KILL_SWITCH_ACTIVE`, failure code absent, deployment empty, hidden/unmeasured. |
+| Revoke only Personalization, leaving Analytics enabled | Returned `consent_denied`, failure code absent, hidden/unmeasured. |
+| Final Decline all and reload | Left browser denied: `consent_denied`, failure code absent, hidden/unmeasured. |
+
+All actions used native Shopify banner/preferences controls. No injected privacy APIs, cookies/storage edits, fabricated events, orders or baseline activation. Screenshots alone cannot show hidden runtime attributes; table values came from contemporaneous read-only DOM inspection. No storage/identity-clearing or server/pixel-delivery assertion is inferred from these screenshots.
+
+Additional unmodified local artifacts in the same ignored directory:
+
+- `consent-banner-settings-all-regions.png` — saved admin regional configuration.
+- `consent-before-choice-release48.png`, SHA256 `b9b24acc7b71aaad39ed558ab1b6a6559408d1325529e3476a4116dd516d01f9`.
+- `consent-declined-release48.png`, SHA256 `3d1756262fa1ae62dd45e5a34071fc076bc40efbea50f822e6ab132b5d9072c9`.
+- `consent-granted-held-release48.png` — captured during the FIRST failed late grant; filename does not establish successful hold response.
+- `consent-granted-retry-release48.png` and `consent-revoked-release48.png` — visually identical Original-page screenshots to the preceding file; all three SHA256 `ba1e0a3f37505629faffabeded630d5f87272f4567e726276308feaef073edf6`. Their distinct runtime observations are in the table, not visible in the pixels.
+- `consent-reload-denied-release48.png`, SHA256 `6b1f3c1a58daf035a774e58bdd1be7c44707759544c9274d9fb0b455844ad355`.
+
+Sol performed one bounded read-only source diagnosis. A consent-state race or transient request failure remains possible, but neither is established without the first failure code. If reproduced, capture `data-adaptive-failure-code` immediately and distinguish consent, timeout, HTTP, response-validation and network causes before changing code. Successful retries do not erase the first failure. No code fix, deploy, formal consent PASS or QA-recorder submission occurred in this continuation.

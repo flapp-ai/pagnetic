@@ -5,9 +5,10 @@ import test from "node:test";
 import { transformSync } from "esbuild";
 
 const script = transformSync(readFileSync("extensions/adaptive-measurement/src/index.ts", "utf8"), { loader: "ts", format: "cjs" }).code;
-function fixture({ allowed = true, fetcher, beforeStore, beforeRemove } = {}) {
+function fixture({ allowed = true, fetcher, beforeStore, beforeRemove, demoHref = "", demoMarker = null, shop = "fixture.myshopify.com" } = {}) {
   const handlers = new Map();
   const stored = new Map();
+  const demoStored = new Map(demoMarker ? [["pagnetic:v2:demo-mode", demoMarker]] : []);
   const sent = [];
   let privacyHandler;
   let writes = 0;
@@ -18,13 +19,15 @@ function fixture({ allowed = true, fetcher, beforeStore, beforeRemove } = {}) {
       async getItem(key) { return stored.get(key) ?? null; },
       async setItem(key, value) { if (beforeStore) await beforeStore(); writes++; stored.set(key, value); },
       async removeItem(key) { if (beforeRemove) await beforeRemove(); stored.delete(key); },
+    }, sessionStorage: {
+      async getItem(key) { return demoStored.get(key) ?? null; },
     } },
     customerPrivacy: { subscribe(_name, callback) { privacyHandler = callback; } },
-    init: { customerPrivacy: consent(allowed) },
-    settings: { endpoint: "https://fixture.invalid/events", shop: "fixture.myshopify.com", token: "synthetic-pixel-token" },
+    init: { customerPrivacy: consent(allowed), context: { document: { location: { href: demoHref } } } },
+    settings: { endpoint: "https://fixture.invalid/events", shop, token: "synthetic-pixel-token" },
   };
   new vm.Script(script).runInNewContext({
-    require: () => ({ register: (callback) => callback(api) }),
+    require: () => ({ register: (callback) => callback(api) }), URL,
     exports: {}, module: { exports: {} }, setTimeout, clearTimeout, AbortController,
     fetch: async (_url, args) => {
       sent.push(JSON.parse(args.body));
@@ -32,8 +35,9 @@ function fixture({ allowed = true, fetcher, beforeStore, beforeRemove } = {}) {
     },
   });
   return { stored, sent, writes: () => writes,
+    setDemoMarker(value) { if (value == null) demoStored.delete("pagnetic:v2:demo-mode"); else demoStored.set("pagnetic:v2:demo-mode", value); },
     consent(granted) { privacyHandler({ customerPrivacy: consent(granted) }); },
-    emit(name, values = {}) { return handlers.get(name)({ id: `event-${name}`, name, timestamp: new Date().toISOString(), ...values }); },
+    emit(name, values = {}) { const handler = handlers.get(name); return handler ? handler({ id: `event-${name}`, name, timestamp: new Date().toISOString(), ...values }) : Promise.resolve(); },
   };
 }
 async function eventually(predicate, message) {
@@ -54,6 +58,49 @@ test("denied consent writes no pixel identity and sends no decision or checkout"
   await f.emit("checkout_completed");
   assert.equal(f.writes(), 0);
   assert.equal(f.sent.length, 0);
+});
+
+test("demo URL and durable demo marker suppress page, decision and checkout delivery", async () => {
+  const f = fixture({
+    demoHref: "https://test1-eczm2zce.myshopify.com/products/pouch?pagnetic_demo=malformed%20or%20opaque",
+    demoMarker: JSON.stringify({ shop: "test1-eczm2zce.myshopify.com", expiresAt: Date.now() + 60_000 }),
+    shop: "test1-eczm2zce.myshopify.com",
+  });
+  await f.emit("adaptive_storefront_decision", { customData: detail() });
+  await f.emit("page_viewed");
+  await f.emit("checkout_completed", { data: { checkout: { token: "demo-checkout" } } });
+  assert.equal(f.sent.length, 0);
+  assert.equal(f.stored.size, 0);
+});
+
+test("expired or cross-shop demo markers do not suppress ordinary measurement", async () => {
+  const expired = fixture({
+    shop: "test1-eczm2zce.myshopify.com",
+    demoMarker: JSON.stringify({ shop: "test1-eczm2zce.myshopify.com", expiresAt: Date.now() - 1 }),
+  });
+  await expired.emit("page_viewed");
+  assert.equal(expired.sent.length, 1);
+  const otherShop = fixture({
+    shop: "other.myshopify.com",
+    demoMarker: JSON.stringify({ shop: "test1-eczm2zce.myshopify.com", expiresAt: Date.now() + 60_000 }),
+  });
+  await otherShop.emit("page_viewed");
+  assert.equal(otherShop.sent.length, 1);
+});
+
+test("a marker added after pixel initialization suppresses queued checkout sends", async () => {
+  const f = fixture({ shop: "test1-eczm2zce.myshopify.com" });
+  await f.emit("page_viewed");
+  assert.equal(f.sent.length, 1);
+  f.setDemoMarker(JSON.stringify({ shop: "test1-eczm2zce.myshopify.com", expiresAt: Date.now() + 60_000 }));
+  await f.emit("checkout_completed", { data: { checkout: { token: "demo-checkout" } } });
+  assert.equal(f.sent.length, 1);
+});
+
+test("malformed marker is fail-open for ordinary measurement on the exact configured shop", async () => {
+  const f = fixture({ shop: "test1-eczm2zce.myshopify.com", demoMarker: "not-json" });
+  await f.emit("page_viewed");
+  assert.equal(f.sent.length, 1);
 });
 
 test("consented held Original diagnostic is forwarded without creating reusable attribution authority", async () => {

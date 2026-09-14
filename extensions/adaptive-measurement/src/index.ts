@@ -31,6 +31,8 @@ const DELIVERY_ATTEMPT_TIMEOUT_MS = 1_000;
 const DELIVERY_QUEUE_LIMIT = 64;
 const STORAGE_QUEUE_LIMIT = 16;
 const STORAGE_READ_TIMEOUT_MS = 250;
+const DEMO_MARKER_KEY = "pagnetic:v2:demo-mode";
+const DEMO_SHOP = "test1-eczm2zce.myshopify.com";
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -81,11 +83,53 @@ function checkoutData(event: EventLike) {
 }
 
 register(({analytics, browser, customerPrivacy, init, settings}) => {
+  const pageHref = String(
+    (init as unknown as {context?: {document?: {location?: {href?: unknown}}}}).context?.document?.location?.href ?? "",
+  );
+  let demoPage = false;
+  try {
+    const parsed = new URL(pageHref, "https://shopify.invalid");
+    demoPage = parsed.hostname.toLowerCase() === DEMO_SHOP && parsed.searchParams.has("pagnetic_demo");
+  } catch {
+    demoPage = false;
+  }
   const config = settings as PixelSettings;
   if (!config.endpoint || !config.shop || !config.token) return;
   const endpoint = config.endpoint;
   const shop = config.shop;
   const token = config.token;
+  const configuredDemoShop = shop.trim().toLowerCase() === DEMO_SHOP;
+  demoPage = demoPage && configuredDemoShop;
+  function markerActive(value: unknown) {
+    if (typeof value !== "string") return false;
+    try {
+      const parsed = JSON.parse(value) as { shop?: unknown; expiresAt?: unknown };
+      return parsed.shop === DEMO_SHOP && typeof parsed.expiresAt === "number" &&
+        Number.isFinite(parsed.expiresAt) && parsed.expiresAt > Date.now();
+    } catch {
+      return false;
+    }
+  }
+  async function demoSuppressed() {
+    if (demoPage) return true;
+    if (!configuredDemoShop) return false;
+    try {
+      const sessionMarker = await browser.sessionStorage?.getItem(DEMO_MARKER_KEY);
+      if (markerActive(sessionMarker)) return true;
+    } catch {
+      // A denied or unavailable session store must not disable the fallback.
+    }
+    try {
+      const localMarker = await browser.localStorage?.getItem(DEMO_MARKER_KEY);
+      return markerActive(localMarker);
+    } catch {
+      return false;
+    }
+  }
+  function demoGuard(handler: (event: unknown) => unknown) {
+    return (event: unknown) => demoSuppressed().then((suppressed) => suppressed ? undefined : handler(event));
+  }
+  if (demoPage) return;
   let privacyEpoch = 0;
   type DeliveryTask = {
     epoch: number;
@@ -189,7 +233,8 @@ register(({analytics, browser, customerPrivacy, init, settings}) => {
     })();
   }
 
-  function queueDecisionWrite(decision: DecisionReference, epoch: number) {
+  async function queueDecisionWrite(decision: DecisionReference, epoch: number) {
+    if (await demoSuppressed()) return;
     if (epoch !== privacyEpoch || !measurementAllowed()) return Promise.resolve();
     latestDecision = {epoch, value: decision};
     if (storageQueue.length >= STORAGE_QUEUE_LIMIT) {
@@ -251,6 +296,7 @@ register(({analytics, browser, customerPrivacy, init, settings}) => {
   }
 
   async function send(event: EventLike, overrides: Record<string, unknown> = {}) {
+    if (await demoSuppressed()) return;
     if (!measurementAllowed()) return;
     const epoch = privacyEpoch;
     const products = eventProducts(event);
@@ -277,6 +323,7 @@ register(({analytics, browser, customerPrivacy, init, settings}) => {
     };
     const body = JSON.stringify(payload);
     for (let attempt = 1; attempt <= DELIVERY_ATTEMPTS; attempt += 1) {
+      if (await demoSuppressed()) return;
       if (!measurementAllowed() || privacyEpoch !== epoch) return;
       const controller = typeof AbortController === "function"
         ? new AbortController()
@@ -349,7 +396,7 @@ register(({analytics, browser, customerPrivacy, init, settings}) => {
     return queued;
   }
 
-  analytics.subscribe("adaptive_storefront_decision", async (shopifyEvent) => {
+  analytics.subscribe("adaptive_storefront_decision", demoGuard(async (shopifyEvent) => {
     if (!measurementAllowed()) return;
     const epoch = privacyEpoch;
     const event = shopifyEvent as unknown as EventLike;
@@ -433,9 +480,9 @@ register(({analytics, browser, customerPrivacy, init, settings}) => {
         serverProcessingMs: typeof detail.serverProcessingMs === "number" ? detail.serverProcessingMs : null,
       },
     }, storageReady);
-  });
+  }));
 
-  analytics.subscribe("adaptive_storefront_render", (shopifyEvent) => {
+  analytics.subscribe("adaptive_storefront_render", demoGuard((shopifyEvent) => {
     const event = shopifyEvent as unknown as EventLike;
     const detail = record(event.customData);
     return queueSend(event, {
@@ -446,9 +493,9 @@ register(({analytics, browser, customerPrivacy, init, settings}) => {
         errorCode: text(detail.errorCode, 64),
       },
     });
-  });
+  }));
 
-  analytics.subscribe("adaptive_storefront_vitals", (shopifyEvent) => {
+  analytics.subscribe("adaptive_storefront_vitals", demoGuard((shopifyEvent) => {
     const event = shopifyEvent as unknown as EventLike;
     const detail = record(event.customData);
     return queueSend(event, {
@@ -458,18 +505,18 @@ register(({analytics, browser, customerPrivacy, init, settings}) => {
         inpMs: typeof detail.inpMs === "number" ? detail.inpMs : null,
       },
     });
-  });
+  }));
 
-  analytics.subscribe("page_viewed", (event) => queueSend(event as unknown as EventLike));
-  analytics.subscribe("product_viewed", (event) => queueSend(event as unknown as EventLike));
-  analytics.subscribe("product_added_to_cart", (event) => queueSend(event as unknown as EventLike));
-  analytics.subscribe("cart_viewed", (event) => queueSend(event as unknown as EventLike));
-  analytics.subscribe("checkout_started", (shopifyEvent) => {
+  analytics.subscribe("page_viewed", demoGuard((event) => queueSend(event as unknown as EventLike)));
+  analytics.subscribe("product_viewed", demoGuard((event) => queueSend(event as unknown as EventLike)));
+  analytics.subscribe("product_added_to_cart", demoGuard((event) => queueSend(event as unknown as EventLike)));
+  analytics.subscribe("cart_viewed", demoGuard((event) => queueSend(event as unknown as EventLike)));
+  analytics.subscribe("checkout_started", demoGuard((shopifyEvent) => {
     const event = shopifyEvent as unknown as EventLike;
     return queueSend(event, checkoutData(event));
-  });
-  analytics.subscribe("checkout_completed", (shopifyEvent) => {
+  }));
+  analytics.subscribe("checkout_completed", demoGuard((shopifyEvent) => {
     const event = shopifyEvent as unknown as EventLike;
     return queueSend(event, checkoutData(event));
-  });
+  }));
 });

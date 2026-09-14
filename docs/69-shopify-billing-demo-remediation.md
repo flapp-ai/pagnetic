@@ -5,6 +5,10 @@ Status: IN PROGRESS — do not mark reviewer findings resolved until live eviden
 
 ## Sep13 continuation scope
 
+Latest delegated QA continuation: Luna prepared English caption prose and media normalization; Astra verified a preferred lossless stream-copy WebM (212.219seconds, all852frames decode, compressed video payload hash identical to raw source). Doc71 contains proof. Sol identified that the same population-performance gate blocks even internal test1 activation; docs72/74 describe the conflict and an owner-decision proposal, not a bypass or fake PASS. Astra's scoped screenshot/frame review is doc75. No new role, production receipt, flag, deployment, charge, experiment or resubmission was applied. The raw and preferred remux remain local.
+
+Latest recording continuation: doc71 records the genuine new local tab-only walkthrough, source review, campaign form demonstration, desktop/mobile preview, successful native consent grant/revoke, empty Results and current billing/pricing navigation. It is partial raw footage, not the final replacement demo; no duplicate campaign submission, fresh approval, theme-save or activation was performed. Captioning, container-duration normalization, full playback review and missing genuine setup/result footage remain. Doc70 supersedes the older unanswered-cookie-banner permission below: owner approved, test1 all-region banner saved, actual consent evidence captured. No Shopify finding was marked resolved or resubmitted.
+
 ### Fresh test1 draft approved; QA in progress
 
 The owner explicitly approved the new test1-only draft and required QA, excluding public-store rollout. Root re-read the two unchanged Universal cards and current synthetic source, checked the displayed source-bound acknowledgement under that approval, and clicked **Approve and prepare test**. Actual UI confirmed **Plan approved. One Shopify theme-save step remains.** Independent runtime read confirms plan `cmtzdcx1r00m1q6larwx71jys` is WAITING_FOR_THEME with a fresh owner approval record bound to receipt `cmtzd7f0k007kq6lafgyydxtc`. The exact recovery hold remains ON; active experiments0 and deployments0.

@@ -1,6 +1,25 @@
 (function adaptiveStorefrontVitals(root) {
   "use strict";
 
+  try {
+    var parsed = new URL(String(root.location && root.location.href || ""), "https://shopify.invalid");
+    if (parsed.hostname.toLowerCase() === "test1-eczm2zce.myshopify.com" && parsed.searchParams.has("pagnetic_demo")) return;
+    var marker = null;
+    try { marker = root.sessionStorage && root.sessionStorage.getItem("pagnetic:v2:demo-mode"); } catch (_sessionError) { void _sessionError; }
+    if (!marker) {
+      try { marker = root.localStorage && root.localStorage.getItem("pagnetic:v2:demo-mode"); } catch (_localError) { void _localError; }
+    }
+    if (marker) {
+      try {
+        var markerValue = JSON.parse(marker);
+        if (markerValue && markerValue.shop === "test1-eczm2zce.myshopify.com" &&
+            typeof markerValue.expiresAt === "number" && markerValue.expiresAt > Date.now()) return;
+      } catch (_markerError) { void _markerError; }
+    }
+  } catch (_error) {
+    return;
+  }
+
   if (!root.PerformanceObserver) return;
   var lcp = 0;
   var cls = 0;

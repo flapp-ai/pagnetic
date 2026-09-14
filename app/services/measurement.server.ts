@@ -120,6 +120,7 @@ export function mergeOrderMetadata(
     lineItemCount: number;
     test: boolean;
     recovered?: boolean;
+    demoExcluded?: boolean;
   },
 ) {
   let previous: Record<string, unknown> = {};
@@ -142,6 +143,7 @@ export function mergeOrderMetadata(
       incoming.lineItemCount,
     ),
     test: previous.test === true || incoming.test,
+    demoExcluded: previous.demoExcluded === true || incoming.demoExcluded === true,
     recovered: previous.recovered === true || incoming.recovered === true,
   });
 }
@@ -1177,6 +1179,18 @@ function decisionFromLineItems(payload: Record<string, unknown>) {
   return null;
 }
 
+/** Preserve the order for cleanup/security, but exclude the exact isolated demo product from adaptive attribution. */
+export function isTest1SyntheticDemoOrder(shop: string, payload: Record<string, unknown>) {
+  if (shop !== "test1-eczm2zce.myshopify.com") return false;
+  const lineItems = Array.isArray(payload.line_items) ? payload.line_items : [];
+  return lineItems.some((lineItem) => {
+    if (!lineItem || typeof lineItem !== "object") return false;
+    const item = lineItem as Record<string, unknown>;
+    return String(item.product_id ?? "") === "10345426977074" ||
+      item.admin_graphql_api_product_id === "gid://shopify/Product/10345426977074";
+  });
+}
+
 export async function ingestOrderWebhook(args: {
   db: PrismaClient;
   shop: string;
@@ -1292,7 +1306,8 @@ async function ingestOrderWebhookTransaction(args: {
   const currencyCode = String(
     args.payload.currency ?? args.payload.presentment_currency ?? "UNKNOWN",
   ).slice(0, 8);
-  const decisionId = decisionFromLineItems(args.payload);
+  const demoExcluded = isTest1SyntheticDemoOrder(args.shop, args.payload);
+  const decisionId = demoExcluded ? null : decisionFromLineItems(args.payload);
   const existingOrder = await args.db.storeOrder.findUnique({
     where: {
       merchantId_shopifyOrderId: { merchantId: merchant.id, shopifyOrderId },
@@ -1306,6 +1321,7 @@ async function ingestOrderWebhookTransaction(args: {
       : 0,
     test: args.payload.test === true,
     recovered: args.topic === "ORDERS_RECOVERED",
+    demoExcluded,
   });
   const order = await args.db.storeOrder.upsert({
     where: {
