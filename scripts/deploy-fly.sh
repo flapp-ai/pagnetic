@@ -10,9 +10,15 @@ test "${#release}" -eq 40 || { echo "Refusing deploy: Git release must be a full
 
 # Release notes may be edited during evidence capture. Runtime inputs must be
 # committed so APP_RELEASE identifies the exact code inside the image.
-git diff --quiet -- Dockerfile app extensions prisma scripts storefront package.json pnpm-lock.yaml pnpm-workspace.yaml shopify.app.toml fly.toml || {
+runtime_paths="Dockerfile app extensions prisma scripts storefront package.json pnpm-lock.yaml pnpm-workspace.yaml shopify.app.toml fly.toml"
+git diff HEAD --quiet -- $runtime_paths || {
   echo "Refusing deploy: runtime inputs differ from APP_RELEASE=$release." >&2
   exit 1
 }
+untracked="$(git ls-files --others --exclude-standard -- $runtime_paths)"
+test -z "$untracked" || {
+  echo "Refusing deploy: untracked runtime inputs are not part of APP_RELEASE=$release." >&2
+  exit 1
+}
 
-exec flyctl deploy --build-arg "APP_RELEASE=$release" "$@"
+exec "${FLYCTL_BIN:-flyctl}" deploy --build-arg "APP_RELEASE=$release" "$@"
