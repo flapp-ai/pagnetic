@@ -1,5 +1,8 @@
+ARG APP_RELEASE
 FROM node:22-bookworm-slim AS build
+ARG APP_RELEASE
 WORKDIR /app
+RUN case "$APP_RELEASE" in (*[!0-9a-f]*|'') exit 1;; esac && test "${#APP_RELEASE}" -eq 40
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/* \
@@ -10,7 +13,10 @@ COPY . .
 RUN pnpm prisma generate && pnpm build
 
 FROM node:22-bookworm-slim AS runtime
+ARG APP_RELEASE
 WORKDIR /app
+RUN case "$APP_RELEASE" in (*[!0-9a-f]*|'') exit 1;; esac && test "${#APP_RELEASE}" -eq 40
+ENV APP_RELEASE=$APP_RELEASE
 ENV NODE_ENV=production
 ENV COREPACK_HOME=/opt/corepack
 RUN apt-get update \
