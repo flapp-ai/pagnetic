@@ -1,6 +1,6 @@
 # Approved isolated demo: implementation and QA checkpoint
 
-Date: 2026-09-14. Status: IMPLEMENTATION IN PROGRESS; not deployed or accepted.
+Date: 2026-09-14. Status: IMPLEMENTED AND DEPLOYED; live activation/recording awaits the exact package and operator approvals. Not resubmitted.
 
 Owner approval: “yes i approve your porposal go on”, referring to doc74's isolated test1 demo mode and dedicated Astra QA identity. Public launch, production performance acceptance and experiment activation are not included.
 
@@ -58,3 +58,11 @@ Root verified 28 billing/subscription/navigation regressions, 54 storefront/pixe
 The additive migration introduces TestStoreDemoLease coordination; immutable receipts/audits remain the evidence. Exact synthetic product orders cannot attach legacy decision references; the existing v2 financial ledger excludes canonical test orders. Accelerated/cross-origin checkout browser verification remains unproven and is not represented as passed.
 
 Before deployment, Fly release48 was healthy. A fresh encrypted backup `pagnetic-ee58c237-5e7f-4c29-9272-e18f5ce08938.sqlite.enc` verified with isolated restore in1701ms. The backup routine pruned one obsolete local cache pair; remote backup objects were unchanged. No new demo authority or Shopify submission was applied.
+
+## Deployment and live inactive-state verification
+
+Source commit `b074c39` deployed to healthy Fly machine version49, image `registry.fly.io/pagnetic:deployment-01M2F9BFWXCNEYGXFSNT85BAZJ`. Public `/healthz` returned `ok:true`; Fly health1/1 passing. Additive migration `20260914123000_test_store_demo_lease` is applied. Shopify CLI released version `test1-demo-b074c39` (version1127508115457) with theme/pixel builds and validation passing. No GitHub push was performed.
+
+Read-only production query confirmed demo lease count0, exact test1 recovery hold ON, active experiments0 and active deployments0. Actual authenticated Chrome `/app/demo` loads successfully, displays **Demo / synthetic test — not a live experiment**, package **PENDING**, **Open Messages**, and **Provision dedicated Astra operator**. Root did not click provisioning or approve the package. The tab was left open for handoff.
+
+Next boundary: obtain explicit approval for the exact pending package and test1 operator, then provision/start through the real app, perform live consent/stop/expiry/native-checkout checks, record and review the completed English reviewer demonstration. No active-demo browser PASS, finished new recording, Shopify resubmission or approval is claimed.

@@ -1,5 +1,7 @@
 # Shopify billing and onboarding-demo remediation
 
+Latest checkpoint (2026-09-14): doc76 records tested isolated test1 demo implementation, source `b074c39`, healthy Fly version49 and Shopify extension version `test1-demo-b074c39`. Live demo admin loads with package PENDING; no operator or demo started, recovery hold ON and experiments/deployments0. Exact package/operator approvals, active-demo browser QA, final recording and Shopify resubmission remain pending. This supersedes earlier not-deployed statements only for this new implementation.
+
 Date: 2026-09-12
 Status: IN PROGRESS — do not mark reviewer findings resolved until live evidence below is complete.
 
