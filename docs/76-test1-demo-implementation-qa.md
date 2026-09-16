@@ -1,6 +1,10 @@
 # Approved isolated demo: implementation and QA checkpoint
 
-Date: 2026-09-14. Status: IMPLEMENTED AND DEPLOYED; live activation/recording awaits the exact package and operator approvals. Not resubmitted.
+Latest checkpoint: September 16. Actual current-release verification accepted placement/Original fallback. The new [doc81 recording](./81-reviewer-recording-20260916.md) includes persisted campaign configuration, a fresh isolated demo start, consent deny/grant, native cart/test-checkout navigation, cleanup/stop, empty Results and loaded hosted plans. Final video is English-captioned and decode-checked; [doc83](./83-reviewer-media-deployment-20260916.md) records hosting. Seven QA checks and the serving hold remain; final Shopify submission still needs owner approval. The historical September 14 partial recording is in [doc77](./77-reviewer-recording-20260914.md).
+
+## Final submission approval gate
+
+Latest owner instruction: “approve it with me when the submission is ready”. Preparation, recording and QA may continue, but root must present the final reviewer video, response and remaining limitations to the owner and obtain fresh approval before clicking Shopify resubmit/submit. Earlier general launch authorization does not override this new gate.
 
 Owner approval: “yes i approve your porposal go on”, referring to doc74's isolated test1 demo mode and dedicated Astra QA identity. Public launch, production performance acceptance and experiment activation are not included.
 
@@ -66,3 +70,11 @@ Source commit `b074c39` deployed to healthy Fly machine version49, image `regist
 Read-only production query confirmed demo lease count0, exact test1 recovery hold ON, active experiments0 and active deployments0. Actual authenticated Chrome `/app/demo` loads successfully, displays **Demo / synthetic test — not a live experiment**, package **PENDING**, **Open Messages**, and **Provision dedicated Astra operator**. Root did not click provisioning or approve the package. The tab was left open for handoff.
 
 Next boundary: obtain explicit approval for the exact pending package and test1 operator, then provision/start through the real app, perform live consent/stop/expiry/native-checkout checks, record and review the completed English reviewer demonstration. No active-demo browser PASS, finished new recording, Shopify resubmission or approval is claimed.
+
+## Owner approval applied and initial live QA
+
+The owner explicitly approved the exact package and dedicated Astra operator in chat. Root used the actual test1 UI: **Provision dedicated Astra operator** confirmed success; Messages showed the unchanged package hash `670e19c0…36d24`, exact synthetic-pouch content and source, then **Approve this exact adaptive package** returned APPROVED for `cmu0uast301fhq6lb6isxnwv0`.
+
+Root started a 15-minute isolated demo through `/app/demo` and opened its generated link. With previous optional consent denied, no demo panel appeared. In native Shopify Cookie preferences, root granted Personalization and Analytics only (Marketing remained off), saved, and observed the live panel with **Demo / synthetic test — not a live experiment**, the approved pockets headline and all four approved bullets. Native Add to cart and Buy it now remained present. Native **Decline all** then removed the demo panel while those controls remained. Root stopped the session through the admin UI, which confirmed **Synthetic demo lease stopped** and restored the start button.
+
+This was live browser QA, not a recording. No purchase, public rollout, performance acceptance, sales-lift claim or Shopify submission occurred. Remaining: broader active-demo checkout/stop/expiry evidence as needed, final English setup-to-result recording and review, then Shopify resubmission. All signed demo links and authentication tokens are intentionally omitted from this document.
