@@ -1,6 +1,6 @@
 # Shopify resubmission response — DRAFT
 
-**Owner approval required before Shopify resubmission.** Final media and public hosting are root-verified in [doc83](./83-reviewer-media-deployment-20260916.md). Authenticated submission-field updates and postdeployment current-release verification await restoration of the Shopify session. Final Shopify submission remains owner-gated.
+**Owner approval required before Shopify resubmission.** September17 checkpoint: authenticated postdeploy current-release verification and saved listing/testing-field updates are complete. New billing/demo proof acknowledgements are saved; actual feedback shows3/3 and Ready to resubmit. [Doc84](./84-shopify-resubmission-preparation-20260917.md) records the real actions. Final Submit fixes remains owner-gated. This developer acknowledgement is not Shopify acceptance or public launch.
 
 Date: 2026-09-16  
 App: Pagnetic  
@@ -47,7 +47,7 @@ Pagnetic team
 
 ## Acceptance gaps before claiming the finding resolved
 
-1. Hosted playback/hash verification is complete in doc83. Restore the authenticated Shopify session, repeat current-release verification after asset-only deployment and save the new URL/instructions to the real submission fields.
+1. Hosted playback/hash verification, restored session, postdeploy current-release verification and persisted new URL/instructions are complete in docs83/84.
 2. Keep the seven pending QA checks and storefront hold explicit: mobile, desktop, standard checkout, accelerated checkout, Shop Pay, consent and performance. No v2 flag, experiment activation, treatment, or lift claim is authorized by this draft.
-3. The Shopify Partner submission fields still require the normal OTP-authorized owner action; do not invent or prefill submission state. Owner approval is required for the final submit.
+3. Final owner approval is outstanding. Do not click Submit fixes/resubmit without it; rerun the actual platform checks exposed by the approved submission flow and verify the receipt.
 4. After submission, verify the live Shopify feedback state and receipt directly. Do not claim a 100% review pass or Shopify approval from local media, hosting, or a submission receipt.

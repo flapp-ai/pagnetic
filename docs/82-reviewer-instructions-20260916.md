@@ -1,5 +1,7 @@
 # Shopify reviewer instructions and response template
 
+Latest September17 checkpoint: owner restored sign-in; updated video and numbered testing instructions saved in the real English listing and persistence confirmed from a separately loaded editor. Billing/demo resolution proofs are saved and feedback shows3/3 Ready to resubmit. Postdeployment theme/Original verification passed; seven experimental QA checks remain. Final resubmission awaits owner approval. See [doc84](./84-shopify-resubmission-preparation-20260917.md). The source-derived caveats below remain valid; session-expiry statements describe the earlier September16 state only.
+
 **Draft for final submission QA.** Root-reviewed final media is 267.8 seconds (~4:28), with two real tab-captured segments, English burnt-in captions and no audio; SHA-256 is `cc9ec3c98187a9919a6fde6b2f44c5f6dc613b0c7c7511a1ab4d3eba5a3a6fd9`. Hosting/operator URL verification is recorded in [doc83](./83-reviewer-media-deployment-20260916.md). Only final Shopify submission requires fresh owner approval.
 
 ## Legitimate reviewer access
@@ -57,4 +59,4 @@ Pagnetic team
 - Caption file or embedded captions, checked against the final rendered video.
 - Links to [doc69 billing evidence](./69-shopify-billing-demo-remediation.md), [doc76 controlled-demo QA](./76-test1-demo-implementation-qa.md), [doc81 final recording facts](./81-reviewer-recording-20260916.md), and [doc83 hosting proof](./83-reviewer-media-deployment-20260916.md). Doc77 is the older partial recording.
 - Exact current release/package/source identifiers visible in the final capture; source commit `216a74c`, approved package `cmu0uast301fhq6lb6isxnwv0` / hash prefix `670e19…`. Do not replace them with historical hashes or stale UI state.
-- Do not claim 100% review completion. Shopify Partner submission fields remain pending the normal OTP-authorized owner action; final submit is owner-gated.
+- Do not claim 100% review completion. Listing/testing fields and proof acknowledgements are saved; final submit is owner-gated and no Shopify acceptance/approval is claimed.
