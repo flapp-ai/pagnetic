@@ -30,4 +30,3 @@ Use the canonical published synthetic product URL, with no demo query or demo ma
 - Performance: **pending**; synthetic test1 is explicitly incapable of population-grade certification.
 
 Do not click a hold-release/activation control or submit a Shopify review package based on these automated results. The synthetic demo intentionally suppresses measurement and checkout attribution: its pixel tests confirm that demo URL/marker events, including checkout, are not delivered (`tests/pixel-privacy-v2.test.js:63-98`), and the demo UI is explicitly not a live experiment (`app/routes/app.demo.tsx:74`).
-
