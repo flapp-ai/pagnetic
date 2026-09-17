@@ -2,6 +2,12 @@
 
 Status: test1 demonstration evidence is partially captured. The recovery hold remains on; no baseline activation, treatment serving, public rollout, or merchant-readiness claim is authorized.
 
+## September17 execution checkpoint
+
+The six browser checks below have now been rerun, root-reviewed, privately stored with independently matched byte hashes, and recorded through the existing provisioned operator/official recorder on release `402fe1b55566b865f9a84092746bf9bd1c7e5f15`. Root refreshed the real Overview: only `performance` remains, eight of nine checks accepted. Shop Pay is N/A for test1's verified provider configuration; the other five are applicable scoped passes. See [root evidence](./88-root-browser-qa-20260917.md) and [receipt results](./89-qa-receipt-results-20260917.md). The following six-check instructions are retained as the executed protocol, not six current pending items.
+
+The combined performance/activation decision below is unchanged. Bounded local diagnostics now include1,440 decisions and zero errors but do not replace the frozen field/capacity evidence. The owner-approved distinct isolated demo was implemented separately, exercised, and stopped without satisfying or converting into the performance PASS. Do not activate the Original baseline or release the hold. Shopify review of the disclosed billing/demo fixes remains a separate final owner approval; this activation dependency is not permission to claim population performance.
+
 ## Performance decision
 
 The current activation implementation accepts a fresh authenticated `performance` QA receipt, but the recorder validates receipt integrity and scope rather than calculating the frozen performance protocol. Recording a weak artifact would therefore pass an implementation gate without satisfying PRD section 13.2.

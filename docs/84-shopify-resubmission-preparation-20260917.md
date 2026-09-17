@@ -2,6 +2,12 @@
 
 Status: reviewer materials and feedback proofs saved; final resubmission NOT performed. Fresh owner approval is required before clicking Submit fixes.
 
+## Subsequent scoped QA completion
+
+The owner's later parallel-QA request was executed against the same runtime. Six additional authenticated checks are now accepted; refreshed actual Overview lists only Performance (8/9 activation checks). Desktop/mobile, canonical standard/direct-buy checkout and ordered native consent passed in the disclosed synthetic Chrome scope; Shop Pay is N/A for the verified test1 payment configuration. Exact root evidence and private receipt IDs are in [doc88](./88-root-browser-qa-20260917.md) and [doc89](./89-qa-receipt-results-20260917.md). Performance's local diagnostics passed, but its real-merchant field/capacity gate remains pending; no performance receipt or hold release occurred. This improves the internal demonstration QA but does not certify full experiment/public-launch readiness. The earlier seven-pending observation below is historical, not the latest count.
+
+The billing/demo resubmission package remains distinct from governed experiment activation. Final Submit fixes still requires fresh owner approval; no subsequent QA activity is Shopify submission or approval.
+
 ## Authenticated work completed
 
 - Owner restored the Shopify session and supplied the Partners organization link. Actual Partners and test1 Admin pages were authenticated; no OTP/password was stored or requested again.

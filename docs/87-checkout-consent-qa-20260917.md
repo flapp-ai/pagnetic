@@ -1,0 +1,33 @@
+# Checkout, accelerated path, Shop Pay and consent QA — 2026-09-17
+
+Status: bounded review complete; no runtime writes, deployment, charge, order submission, new account or permission was used. This note is an acceptance plan/evidence review for the owner-operated Shopify browser pass. It does not itself create QA receipts or clear the test-store serving hold.
+
+## Release-bound acceptance standard
+
+The current release has nine manual keys: placement, mobile, desktop, standard checkout, accelerated checkout, Shop Pay, consent flows, Original fallback and performance (`app/services/pilot-setup.ts:10-19`). The current authenticated release already has placement and Original-fallback receipts; the remaining keys must be evidenced against the same product, published theme, current cutover receipt and `APP_RELEASE`.
+
+An accepted operator artifact must be private, non-empty and <=5 MB, captured no more than 14 days old, SHA-256 bound, and recorded by an active OWNER/OPERATOR while the exact safety hold and current published theme evidence remain valid (`app/services/test-store-cutover.server.ts:1021-1110`). The acceptance reader also verifies receipt integrity, product/cutover/theme/release identity and freshness (`app/services/test-store-cutover.server.ts:1317-1406`). Screenshots or this note alone are not receipts.
+
+`NOT_APPLICABLE` is intentionally legal only for `accelerated_checkout` and `shop_pay` (`app/services/test-store-cutover.server.ts:98-105`). It must describe the provider/store capability actually observed, not the absence of a test attempt.
+
+## Exact browser steps and minimum evidence
+
+Use the canonical published synthetic product URL, with no demo query or demo marker, and record timestamp, browser/device viewport, URL/product, store domain, published theme ID, app release and untouched artifact hash.
+
+1. **Standard checkout — APPLICABLE/PASS.** Load the product, verify the Pagnetic panel does not cover native purchase controls, click Add to cart, verify exactly one synthetic pouch and expected total, click Checkout, and verify Shopify's native contact/delivery/shipping/payment/finalize stages plus the configured test gateway. Stop before Pay/submit. Evidence: one short screen capture or screenshot sequence showing product, cart and checkout continuity; no real payment.
+2. **Accelerated checkout — APPLICABLE/PASS when a direct-buy capability is shown.** Reload the same canonical product, click the visible Buy it now/direct-buy control, and verify it enters the same native checkout with the same one-item identity and test gateway. Do not submit. The September 13 observation reached native checkout, so this remains applicable for this release; it is not Shop Pay evidence. If no accelerated control is rendered, capture the product/payment capability state and record `NOT_APPLICABLE` only if the provider/store has no accelerated method enabled, with provider evidence.
+3. **Shop Pay — NOT_APPLICABLE only with canonical provider evidence.** In Shopify Admin open Settings → Payments and capture the payment-provider state showing Shopify Payments is not configured/available (the current test1 observation was “Shopify Payments — Complete setup,” with Test payment gateway active). On the same current product/cart checkout, capture that no Shop Pay button or Shop Pay option is offered. Record `NOT_APPLICABLE` for this store/release; do not infer that Pagnetic lacks Shop Pay support globally. If Shopify Payments/Shop Pay becomes enabled and the option appears, test the visible Shop Pay path without completing a charge and record APPLICABLE/PASS only after continuity and attribution-safe evidence.
+4. **Consent flows — APPLICABLE/PASS only after ordered native interaction.** On the canonical product, use Shopify's native customer privacy banner/preferences (no injected APIs, cookie edits or storage edits): initial state; Decline; Personalization only; add Analytics with Marketing off and save; reload and confirm choices; revoke Personalization; Decline all and reload; Accept all and reload. Verify denied/revoked states keep the panel Original/hidden and do not create identity/decision/checkout delivery; consented state may only show the held Original or the explicitly labelled synthetic demo. Capture the first failure code immediately if a late grant fails. The demo resolver itself requires both analytics and preferences consent and otherwise returns Original (`app/services/test1-demo.server.ts:239-268`).
+5. **Performance — remain pending.** Do not use a screenshot, tiny synthetic run, or test-store checkout as a performance PASS. The frozen gate needs representative LCP/INP/CLS, decision latency/deadline, device/geography scope and twice-forecast mixed-load validation; test1 synthetic traffic cannot establish that (`docs/72-test1-remaining-qa-plan.md:7-19`).
+
+## Honest acceptance result for this pass
+
+- Automated focused client/privacy/demo/cutover tests: **62 passed, 0 failed** (`tests/test1-demo.test.ts`, `tests/test-store-cutover.test.ts`, `tests/pixel-privacy-v2.test.js`, `tests/adaptive-panel.test.js`). These validate consent denial/no identity, demo suppression, queued-checkout suppression, revocation races, exact test-store scope and receipt rules; they do not replace browser/provider evidence.
+- Standard checkout: prior browser observation reached native test checkout without submitting; retain as bounded observation until owner/operator artifact is recorded.
+- Accelerated checkout: prior Buy it now observation reached native test checkout without submitting; **APPLICABLE**, not N/A.
+- Shop Pay: **candidate NOT_APPLICABLE** for test1 only when the owner captures the canonical Shopify Payments “Complete setup”/Test payment gateway state plus checkout absence of Shop Pay. This is provider capability evidence, not a Pagnetic feature claim.
+- Consent: prior native-flow observation included deny/revoke/reload and a first late-grant `runtime_failure_safe`; because the first failure code was not captured, keep **pending** until rerun captures it immediately and the ordered flow is artifact-bound.
+- Performance: **pending**; synthetic test1 is explicitly incapable of population-grade certification.
+
+Do not click a hold-release/activation control or submit a Shopify review package based on these automated results. The synthetic demo intentionally suppresses measurement and checkout attribution: its pixel tests confirm that demo URL/marker events, including checkout, are not delivered (`tests/pixel-privacy-v2.test.js:63-98`), and the demo UI is explicitly not a live experiment (`app/routes/app.demo.tsx:74`).
+
