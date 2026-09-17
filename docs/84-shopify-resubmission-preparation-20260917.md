@@ -1,6 +1,6 @@
 # Shopify resubmission preparation — September 17, 2026
 
-Status: reviewer materials and feedback proofs saved; final resubmission NOT performed. Fresh owner approval is required before clicking Submit fixes.
+Status: owner approved **yes submit**; fixes resubmitted September17. Actual Shopify page confirms **In review — We're reviewing your response**. See [submission confirmation](./90-shopify-resubmission-confirmation-20260917.md). The preparation and approval-boundary statements below are retained as historical pre-submission evidence, not a current pending submission.
 
 ## Subsequent scoped QA completion
 
