@@ -2,6 +2,7 @@ import type { ActionFunctionArgs } from "react-router";
 
 import prisma from "../db.server";
 import { automationAuthorized } from "../services/automation-auth.server";
+import { listAutomationMerchants } from "../services/automation-merchants.server";
 import {
   enforcePublicFunnelRetention,
   runMerchantAutomation,
@@ -13,9 +14,7 @@ export const loader = async () => Response.json({ ok: false }, { status: 405 });
 export const action = async ({ request }: ActionFunctionArgs) => {
   if (!automationAuthorized(request))
     return Response.json({ ok: false }, { status: 401 });
-  const merchants = await prisma.merchant.findMany({
-    select: { id: true, shop: true },
-  });
+  const merchants = await listAutomationMerchants(prisma);
   const results: Array<{
     shop: string;
     ok: boolean;
