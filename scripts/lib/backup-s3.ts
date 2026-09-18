@@ -1,5 +1,6 @@
 import {
   GetObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -9,6 +10,12 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
 import type { BackupStore } from "./sqlite-backup";
+import {
+  assertBackupUploadBudget,
+  backupUploadBudget,
+  serializedBackupUploads,
+  withBackupUploadLock,
+} from "./backup-upload-budget";
 
 export function backupS3Config(env: NodeJS.ProcessEnv = process.env) {
   const endpoint = new URL(
@@ -50,6 +57,8 @@ export function createBackupStore(
   env: NodeJS.ProcessEnv = process.env,
 ): BackupStore {
   const config = backupS3Config(env);
+  const budget = env.NODE_ENV === "production" ? backupUploadBudget(env) : null;
+  const serialize = serializedBackupUploads();
   const client = new S3Client({
     endpoint: config.endpoint,
     region: config.region,
@@ -58,7 +67,11 @@ export function createBackupStore(
     maxAttempts: 3,
   });
   const objectKey = (key: string) => {
-    if (!/^pagnetic-[a-f0-9-]{36}\.sqlite\.enc(?:\.privacy\.enc|\.json)?$/.test(key))
+    if (
+      !/^pagnetic-[a-f0-9-]{36}\.sqlite\.enc(?:\.privacy\.enc|\.json)?$/.test(
+        key,
+      )
+    )
       throw new Error("Invalid backup object name");
     return `${config.prefix}/${key}`;
   };
@@ -66,27 +79,48 @@ export function createBackupStore(
     kind: "s3",
     destination: config.destination,
     async put(key, path) {
-      const size = (await stat(path)).size;
-      if (size > 5 * 1024 ** 3)
-        throw new Error(
-          "Backup exceeds single-upload limit; migrate storage or configure multipart support",
-        );
-      const body = createReadStream(path);
-      try {
-        await client.send(
-          new PutObjectCommand({
-            Bucket: config.bucket,
-            Key: objectKey(key),
-            Body: body,
-            ContentLength: size,
-            ContentType: "application/octet-stream",
-            IfNoneMatch: "*",
-          }),
-          { abortSignal: AbortSignal.timeout(120_000) },
-        );
-      } finally {
-        body.destroy();
-      }
+      return serialize(async () => {
+        const upload = async () => {
+          const size = (await stat(path)).size;
+          const destinationKey = objectKey(key);
+          if (budget)
+            await assertBackupUploadBudget({
+              size,
+              budget,
+              list: (token, signal) =>
+                client.send(
+                  new ListObjectsV2Command({
+                    Bucket: config.bucket,
+                    MaxKeys: 1000,
+                    ContinuationToken: token,
+                    // No Prefix: count backup, privacy and unrelated retained objects.
+                  }),
+                  { abortSignal: signal },
+                ),
+            });
+          if (size > 5 * 1024 ** 3)
+            throw new Error(
+              "Backup exceeds single-upload limit; migrate storage or configure multipart support",
+            );
+          const body = createReadStream(path);
+          try {
+            await client.send(
+              new PutObjectCommand({
+                Bucket: config.bucket,
+                Key: destinationKey,
+                Body: body,
+                ContentLength: size,
+                ContentType: "application/octet-stream",
+                IfNoneMatch: "*",
+              }),
+              { abortSignal: AbortSignal.timeout(120_000) },
+            );
+          } finally {
+            body.destroy();
+          }
+        };
+        return budget ? withBackupUploadLock(upload) : upload();
+      });
     },
     async get(key, path) {
       const signal = AbortSignal.timeout(120_000);

@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  realpathSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -8,6 +14,7 @@ import test from "node:test";
 import { PrismaClient } from "@prisma/client";
 
 import { deliverOperationalAlerts } from "../app/services/alert-delivery.server";
+import { seedAlertBudget } from "../app/services/alert-budget.server";
 import { runMerchantAutomation } from "../app/services/automation.server";
 import { enqueueOutboxEvent } from "../app/services/job-outbox.server";
 
@@ -340,10 +347,65 @@ test("warning alerts stay local and do not consume the remote webhook", async ()
     assert.equal(sends, 0);
     assert.equal(await f.db.outboxEvent.count(), 0);
     assert.equal(
-      (await f.db.operationalAlert.findUniqueOrThrow({ where: { id: warning.id } })).status,
+      (
+        await f.db.operationalAlert.findUniqueOrThrow({
+          where: { id: warning.id },
+        })
+      ).status,
       "OPEN",
     );
   } finally {
+    await f.close();
+  }
+});
+
+test("global budget counts HTTP failures and defers the retry without network or false delivery", async () => {
+  const f = await fixture();
+  const directory = mkdtempSync(
+    path.join(realpathSync(tmpdir()), "delivery-budget-"),
+  );
+  try {
+    seedAlertBudget(directory, {
+      version: 1,
+      month: "2026-09",
+      attempts: 99,
+      lastReservedAt: f.now.toISOString(),
+    });
+    const environment = { ...f.environment, ALERT_BUDGET_DIRECTORY: directory };
+    let calls = 0;
+    const fetchImpl: typeof fetch = async () => {
+      calls++;
+      return new Response(null, { status: 500 });
+    };
+    await deliverOperationalAlerts({
+      ...f,
+      environment,
+      alerts: [f.alert],
+      fetchImpl,
+    });
+    const result = await deliverOperationalAlerts({
+      ...f,
+      now: new Date(f.now.getTime() + 3600000),
+      environment,
+      alerts: [f.alert],
+      fetchImpl,
+    });
+    assert.equal(calls, 1);
+    assert.equal(result.status, "BUDGET_DEFERRED");
+    assert.equal(result.delivered, 0);
+    const event = await f.db.outboxEvent.findFirstOrThrow();
+    assert.equal(event.lastErrorCode, "ALERT_BUDGET_EXHAUSTED");
+    assert.notEqual(event.status, "DELIVERED");
+    assert.equal(
+      (
+        await f.db.operationalAlert.findUniqueOrThrow({
+          where: { id: f.alert.id },
+        })
+      ).status,
+      "OPEN",
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
     await f.close();
   }
 });

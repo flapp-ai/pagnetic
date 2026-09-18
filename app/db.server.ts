@@ -1,5 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { assertRecoveryHoldClear } from "./services/recovery-hold.server";
+import {
+  initializeSqlite,
+  sqliteRuntimeUrl,
+} from "./services/sqlite-runtime.server";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -9,6 +13,7 @@ declare global {
 const prisma =
   global.adaptiveStorefrontPrisma ??
   new PrismaClient({
+    datasourceUrl: sqliteRuntimeUrl(process.env.DATABASE_URL),
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 
@@ -17,12 +22,11 @@ const prisma =
 await assertRecoveryHoldClear(prisma, process.env.DATABASE_URL);
 
 const sqliteInitialization = process.env.DATABASE_URL?.startsWith("file:")
-  ? Promise.all([
-      prisma.$queryRawUnsafe("PRAGMA journal_mode=WAL"),
-      prisma.$queryRawUnsafe("PRAGMA busy_timeout=5000"),
-      prisma.$queryRawUnsafe("PRAGMA foreign_keys=ON"),
-    ]).then(() => undefined)
+  ? initializeSqlite(prisma)
   : Promise.resolve();
+
+// No route/session store can observe the client before its connection policy is ready.
+await sqliteInitialization;
 
 export async function databaseReady() {
   await sqliteInitialization;

@@ -26,18 +26,57 @@ export async function ensurePilotRole(args: {
     },
   });
   if (existing) return existing;
-  const count = await args.db.pilotRole.count({
-    where: { merchantId: args.merchantId, active: true },
-  });
-  if (count > 0) return null;
-  return args.db.pilotRole.create({
-    data: {
-      merchantId: args.merchantId,
-      actorKey: args.actor,
-      role: "OWNER",
-      grantedBy: "SYSTEM_BOOTSTRAP",
-    },
-  });
+  try {
+    return await args.db.$transaction(async (tx) => {
+      // SQLite must obtain its writer lock before authorization reads: a deferred
+      // read-to-write upgrade can deadlock competing first-install transactions.
+      // No-op SQL preserves Merchant timestamps and every business field.
+      const locked =
+        await tx.$executeRaw`UPDATE "Merchant" SET "id" = "id" WHERE "id" = ${args.merchantId}`;
+      if (locked !== 1) throw new Error("PILOT_BOOTSTRAP_MERCHANT_NOT_FOUND");
+      const role = await tx.pilotRole.findUnique({
+        where: {
+          merchantId_actorKey: {
+            merchantId: args.merchantId,
+            actorKey: args.actor,
+          },
+        },
+      });
+      if (role) return role;
+      const count = await tx.pilotRole.count({
+        where: { merchantId: args.merchantId, active: true },
+      });
+      if (count > 0) return null;
+      return tx.pilotRole.create({
+        data: {
+          merchantId: args.merchantId,
+          actorKey: args.actor,
+          role: "OWNER",
+          grantedBy: "SYSTEM_BOOTSTRAP",
+        },
+      });
+    });
+  } catch (error) {
+    // Only the identical actor's unique-key collision is recoverable. Never
+    // retry permission decisions or upgrade/reactivate the winning role.
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      const role = await args.db.pilotRole.findUnique({
+        where: {
+          merchantId_actorKey: {
+            merchantId: args.merchantId,
+            actorKey: args.actor,
+          },
+        },
+      });
+      if (role) return role;
+    }
+    throw error;
+  }
 }
 
 export async function requirePilotRole(args: {

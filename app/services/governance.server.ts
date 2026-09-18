@@ -262,34 +262,54 @@ export async function ensureMerchant(
       );
     }
   }
-  const merchant = await db.merchant.upsert({
-    where: { shop },
-    update: {},
-    create: { shop },
+  const merchant =
+    existingMerchant ??
+    (await db.merchant.upsert({
+      where: { shop },
+      update: {},
+      create: { shop },
+    }));
+
+  const existingAngles = await db.acquisitionAngle.findMany({
+    where: {
+      merchantId: merchant.id,
+      key: { in: DEFAULT_ANGLES.map((angle) => angle.key) },
+    },
   });
+  for (const angle of DEFAULT_ANGLES) {
+    const existing = existingAngles.find((item) => item.key === angle.key);
+    if (
+      existing &&
+      existing.label === angle.label &&
+      existing.description === angle.description &&
+      existing.active
+    )
+      continue;
+    await db.acquisitionAngle.upsert({
+      where: {
+        merchantId_key: { merchantId: merchant.id, key: angle.key },
+      },
+      update: {
+        label: angle.label,
+        description: angle.description,
+        active: true,
+      },
+      create: {
+        merchantId: merchant.id,
+        key: angle.key,
+        label: angle.label,
+        description: angle.description,
+      },
+    });
+  }
 
-  await Promise.all(
-    DEFAULT_ANGLES.map((angle) =>
-      db.acquisitionAngle.upsert({
-        where: {
-          merchantId_key: { merchantId: merchant.id, key: angle.key },
-        },
-        update: {
-          label: angle.label,
-          description: angle.description,
-          active: true,
-        },
-        create: {
-          merchantId: merchant.id,
-          key: angle.key,
-          label: angle.label,
-          description: angle.description,
-        },
-      }),
-    ),
-  );
-
-  await ensureBetaEntitlement(db, merchant.id);
+  if (
+    !(await db.betaEntitlement.findUnique({
+      where: { merchantId: merchant.id },
+    }))
+  ) {
+    await ensureBetaEntitlement(db, merchant.id);
+  }
 
   return merchant;
 }

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { reserveAlertAttempt } from "./alert-budget.server";
 
 import {
   claimOutboxEvents,
@@ -66,9 +67,7 @@ export async function deliverOperationalAlerts(args: {
   // Repeated observations or changed summary text do not create another delivery.
   // Lower-severity notices remain visible in-app without consuming remote-alert
   // operations. This behavior is independent of the storefront V2 rollout.
-  for (const alert of args.alerts
-    .filter(isRemoteActionable)
-    .slice(0, 100)) {
+  for (const alert of args.alerts.filter(isRemoteActionable).slice(0, 100)) {
     await args.db.$transaction(async (tx) => {
       const current = await tx.operationalAlert.findFirst({
         where: { id: alert.id, merchantId: args.merchantId, status: "OPEN" },
@@ -146,6 +145,7 @@ export async function deliverOperationalAlerts(args: {
           throw new Error("INVALID_ALERT_PAYLOAD");
         if (!event.leaseUntil || event.leaseUntil <= currentTime())
           throw new Error("STALE_OUTBOX_LEASE");
+        reserveAlertAttempt(environment, currentTime());
         await postAlerts(endpoint, [payload.alert], fetchImpl, event.id);
         await markOutboxDelivered({
           db: args.db,
@@ -157,9 +157,12 @@ export async function deliverOperationalAlerts(args: {
         return "delivered";
       } catch (error) {
         const message = error instanceof Error ? error.message : "";
-        const code = /^ALERT_HTTP_\d{3}$/.test(message)
-          ? message
-          : "ALERT_DELIVERY_FAILED";
+        const budgetDeferred =
+          /^ALERT_BUDGET_(EXHAUSTED|UNAVAILABLE|CLOCK_ROLLBACK)$/.test(message);
+        const code =
+          /^ALERT_HTTP_\d{3}$/.test(message) || budgetDeferred
+            ? message
+            : "ALERT_DELIVERY_FAILED";
         await failOutboxEvent({
           db: args.db,
           merchantId: args.merchantId,
@@ -168,20 +171,23 @@ export async function deliverOperationalAlerts(args: {
           errorCode: code,
           now: currentTime(),
         });
-        return "failed";
+        return budgetDeferred ? "deferred" : "failed";
       }
     }),
   );
   const count = (status: string) =>
     outcomes.filter((value) => value === status).length;
   return {
-    status: count("failed")
-      ? "RETRY_PENDING"
-      : events.length
-        ? "PROCESSED"
-        : "IDLE",
+    status: count("deferred")
+      ? "BUDGET_DEFERRED"
+      : count("failed")
+        ? "RETRY_PENDING"
+        : events.length
+          ? "PROCESSED"
+          : "IDLE",
     delivered: count("delivered"),
-    failed: count("failed"),
+    failed: count("failed") + count("deferred"),
+    deferred: count("deferred"),
     skipped: count("skipped"),
   };
 }

@@ -45,9 +45,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
   };
-  await Promise.all(
-    Array.from({ length: Math.min(3, merchants.length) }, () => worker()),
-  );
+  // SQLite has one writer. Parallel merchants multiply lock waiters without
+  // increasing write throughput; keep tenant execution and auth contexts local.
+  await worker();
   const publicFunnelRetention = await enforcePublicFunnelRetention({
     db: prisma,
   });
