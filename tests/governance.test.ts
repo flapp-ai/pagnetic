@@ -3,9 +3,47 @@ import test from "node:test";
 
 import {
   deriveBrandProfile,
+  productDescriptionText,
   rankStatementsForAngle,
   validateExperience,
 } from "../app/services/governance.server";
+import { diagnoseProductMessage } from "../app/services/message-diagnosis-v2";
+
+test("Shopify HTML descriptions preserve bullet and paragraph evidence boundaries", () => {
+  assert.equal(
+    productDescriptionText(
+      "High-quality ceramic construction Comfortable handle Dishwasher safe",
+      "<p>High-quality ceramic construction</p><ul><li>Comfortable handle for a cozy grip</li><li>Dishwasher &amp; microwave safe</li></ul><p>A must-have for Disney fans</p>",
+    ),
+    "High-quality ceramic construction • Comfortable handle for a cozy grip • Dishwasher & microwave safe • A must-have for Disney fans",
+  );
+  assert.equal(
+    productDescriptionText("Plain description", ""),
+    "Plain description",
+  );
+  assert.equal(
+    productDescriptionText(
+      "First fact. Second fact. Third fact.",
+      "<p>First fact.</p><p>Second fact.</p><p>Third fact.</p>",
+    ),
+    "First fact. Second fact. Third fact.",
+  );
+
+  const reviewerProduct = productDescriptionText(
+    "High-quality ceramic construction Comfortable handle Dishwasher safe A must-have for fans",
+    "<ul><li>High-quality ceramic construction</li><li>Comfortable handle for a cozy grip</li><li>Dishwasher and microwave safe</li><li>A must-have for Disney fans and ocean lovers</li></ul>",
+  );
+  const diagnosis = diagnoseProductMessage({
+    source: {
+      title: "Ariel Mug",
+      description: reviewerProduct,
+      locale: "en",
+    },
+    campaignAdText: "Dishwasher and microwave safe Ariel Mug",
+  });
+  assert.equal(diagnosis.status, "PROPOSED");
+  assert.match(diagnosis.primary?.headline ?? "", /dishwasher and microwave safe/i);
+});
 
 function evidence(
   overrides: Partial<{

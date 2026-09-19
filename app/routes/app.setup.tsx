@@ -814,6 +814,11 @@ export default function PilotSetup() {
             Current identity: {data.actor} · {data.currentRole}
           </p>
         </div>
+        <p className={styles.muted}>
+          Shopify-authenticated staff who can open Pagnetic receive Operator
+          access automatically for setup work. Owner-only approvals, privacy
+          access, billing controls, and role grants remain restricted.
+        </p>
         <Form className={styles.inlineForm} method="post">
           <input name="intent" type="hidden" value="grant-role" />
           <label>

@@ -46,13 +46,21 @@ export async function ensurePilotRole(args: {
       const count = await tx.pilotRole.count({
         where: { merchantId: args.merchantId, active: true },
       });
-      if (count > 0) return null;
       return tx.pilotRole.create({
         data: {
           merchantId: args.merchantId,
           actorKey: args.actor,
-          role: "OWNER",
-          grantedBy: "SYSTEM_BOOTSTRAP",
+          // Shopify has already authenticated this user and limited access to
+          // staff who can open the installed app. Keep the first authenticated
+          // user as the app owner, then give later authenticated staff only the
+          // non-privileged operator role so they can complete onboarding. Owner-
+          // only approvals, privacy access, billing and role grants remain
+          // protected by their existing explicit checks.
+          role: count === 0 ? "OWNER" : "OPERATOR",
+          grantedBy:
+            count === 0
+              ? "SYSTEM_BOOTSTRAP"
+              : "SYSTEM_SHOPIFY_STAFF_BOOTSTRAP",
         },
       });
     });

@@ -39,6 +39,7 @@ type ShopifyProduct = {
   handle: string;
   status: string;
   description: string;
+  descriptionHtml?: string;
   productType: string;
   vendor: string;
   templateSuffix: string | null;
@@ -175,6 +176,56 @@ export function hashValue(value: unknown) {
 
 function normalizedText(value: string) {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function decodeDescriptionEntities(value: string) {
+  const named: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    gt: ">",
+    lt: "<",
+    nbsp: " ",
+    quot: '"',
+  };
+  return value.replace(
+    /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
+    (entity, body: string) => {
+      if (body.startsWith("#x") || body.startsWith("#X")) {
+        const point = Number.parseInt(body.slice(2), 16);
+        return Number.isSafeInteger(point) && point >= 0 && point <= 0x10ffff
+          ? String.fromCodePoint(point)
+          : entity;
+      }
+      if (body.startsWith("#")) {
+        const point = Number.parseInt(body.slice(1), 10);
+        return Number.isSafeInteger(point) && point >= 0 && point <= 0x10ffff
+          ? String.fromCodePoint(point)
+          : entity;
+      }
+      return named[body.toLowerCase()] ?? entity;
+    },
+  );
+}
+
+export function productDescriptionText(
+  description: string,
+  descriptionHtml?: string,
+) {
+  const plain = normalizedText(description);
+  // Keep the canonical Admin API plaintext when it already has enough usable
+  // sentence boundaries. Consult HTML only when Shopify's plaintext flattening
+  // has run distinct list items together and would otherwise block onboarding.
+  if (!descriptionHtml?.trim() || descriptionStatements(plain).length >= 3)
+    return plain;
+  const structured = descriptionHtml
+    .replace(/<\s*(?:br|hr)\b[^>]*\/?\s*>/gi, " • ")
+    .replace(/<\s*\/?\s*(?:li|p|div|h[1-6]|blockquote|tr)\b[^>]*>/gi, " • ")
+    .replace(/<[^>]*>/g, " ");
+  return normalizedText(decodeDescriptionEntities(structured))
+    .replace(/(?:\s*•\s*)+/g, " • ")
+    .trim()
+    .replace(/^•\s*|\s*•$/g, "")
+    .trim() || plain;
 }
 
 function normalizedMappingContext(value: string) {
@@ -340,6 +391,7 @@ export async function syncProducts(args: {
           handle
           status
           description
+          descriptionHtml
           productType
           vendor
           templateSuffix
@@ -378,7 +430,10 @@ export async function syncProducts(args: {
       title: normalizedText(sourceProduct.title),
       handle: sourceProduct.handle,
       status: sourceProduct.status,
-      description: normalizedText(sourceProduct.description),
+      description: productDescriptionText(
+        sourceProduct.description,
+        sourceProduct.descriptionHtml,
+      ),
       productType: normalizedText(sourceProduct.productType),
       vendor: normalizedText(sourceProduct.vendor),
       templateSuffix: normalizedText(sourceProduct.templateSuffix ?? "") || null,

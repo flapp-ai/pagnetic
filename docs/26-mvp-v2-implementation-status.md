@@ -1,5 +1,9 @@
 # Pagnetic MVP v2 — implementation status
 
+## Shopify reviewer-store action needed — 2026-09-19
+
+Shopify kept requirement 2.1.1 open and requested store-specific configuration/video evidence. Fresh invited-store reproduction confirms the previously repaired embedded app renders, but exposed two new onboarding defects: later Shopify staff had no Pagnetic role, and Shopify plaintext flattened rich-text product lists so valid evidence could abstain. A local candidate now auto-provisions later authenticated staff as non-owner Operators, preserves HTML evidence boundaries only when plaintext is insufficient, opens/explains campaign setup, and turns safe abstention into actionable saved-configuration feedback. Full `pnpm check` passes445/445 plus typecheck, lint, app build and extension build. The candidate is **not deployed**; reviewer-store configuration/video and Shopify response remain pending owner release approval. [Exact evidence and post-approval sequence](./98-shopify-reviewer-store-remediation-20260919.md).
+
 ## Shopify resubmission confirmed — 2026-09-17T06:51Z
 
 After explicit owner **yes submit** approval, root clicked Submit fixes once on the authenticated Pagnetic Partners page. The actual provider page changed from Ready to submit to **In review — We're reviewing your response**, with Withdraw replacing Submit fixes. English/limited visibility and the saved billing/demo proofs, screencast and instructions remain unchanged. [Confirmation and scope](./90-shopify-resubmission-confirmation-20260917.md). This supersedes the pending final-submit approval below. Shopify approval/publication remain pending; experimental activation QA8/9, performance field/capacity pending and serving hold ON are unchanged. No deployment, payment/order, activation, push or public visibility change occurred.

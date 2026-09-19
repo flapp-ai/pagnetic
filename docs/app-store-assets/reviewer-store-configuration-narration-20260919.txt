@@ -1,0 +1,14 @@
+This is Pagnetic running inside Shopify's invited MugJestic test store after the reviewer-store remediation.
+
+First, I open Pagnetic from Shopify Admin. Overview, Messages, Results, and Settings render inside the embedded app without a blank document, Application Error, or HTTP five hundred response.
+
+On Messages, I select Ariel Mug. Pagnetic reads the current Shopify product source and preserves the product description's real paragraph and list boundaries. I run the source review. This action does not change the storefront.
+
+I then configure one reviewer campaign using UTM source shopify_review, UTM campaign mug_safe_20260919, UTM content dishwasher_microwave, the Universal angle, and the exact ad message Dishwasher and microwave safe Ariel Mug.
+
+Pagnetic saves the campaign mapping and creates only source-backed copy. The proposed statement and its evidence are shown together. Pagnetic will abstain and keep Original when a product does not contain enough facts; it does not invent unsupported marketing claims.
+
+This invited Shopify staff account is an Operator. It can complete configuration, but owner-only message approval, privacy access, billing controls, and role grants remain protected. I do not bypass that boundary in this recording.
+
+I finish by navigating through Results and Settings and back to Overview to show that the embedded document remains available. No experiment is activated, no order or charge is created, and no sales-lift claim is made in this reviewer test store.
+

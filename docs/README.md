@@ -1,5 +1,7 @@
 # Adaptive Storefront Documentation
 
+Latest review action (2026-09-19): [doc98](./98-shopify-reviewer-store-remediation-20260919.md) records Shopify's reviewer-store request, the freshly reproduced staff-role/product-source blockers, the locally verified 445-test release candidate, and the exact post-approval deployment/configuration/video sequence. The candidate is not deployed or resubmitted.
+
 Development update (2026-09-07): [doc67](./67-shopify-submission-checkpoint.md) records the tested Shopify App Pricing migration, current English-listing state, reviewer screencast and exact remaining submission sequence. The owner authorized the adaptive scope in [doc60](./60-adaptive-storefront-prd.md), with Luna implementing under [doc63](./63-luna-development-brief.md) and milestones tracked in [doc64](./64-adaptive-development-status.md). Earlier contracts and verification below remain historical/implemented baselines, not evidence that the new scope is built. New protocol changes must be versioned and reviewed; no active registrations or production authority change through this notice.
 
 Status: Product-development baseline  

@@ -7,7 +7,10 @@ import test from "node:test";
 
 import { PrismaClient } from "@prisma/client";
 
-import { ensurePilotRole } from "../app/services/access.server";
+import {
+  ensurePilotRole,
+  requirePilotRole,
+} from "../app/services/access.server";
 import { ensureMerchant } from "../app/services/governance.server";
 
 function database(connectionLimit = 1) {
@@ -92,7 +95,7 @@ for (const connectionLimit of [1, 4]) {
       await fixture.close();
     }
   });
-  test(`distinct bootstrap actors serialize to one OWNER (pool ${connectionLimit})`, async () => {
+  test(`distinct Shopify staff bootstrap to one OWNER and later OPERATORs (pool ${connectionLimit})`, async () => {
     const fixture = database(connectionLimit);
     try {
       const merchant = await fixture.db.merchant.create({
@@ -109,12 +112,18 @@ for (const connectionLimit of [1, 4]) {
         ),
       );
       assert.equal(roles.filter((role) => role?.role === "OWNER").length, 1);
-      assert.equal(roles.filter((role) => role === null).length, 3);
+      assert.equal(roles.filter((role) => role?.role === "OPERATOR").length, 3);
       assert.equal(
         await fixture.db.pilotRole.count({
           where: { merchantId: merchant.id, role: "OWNER" },
         }),
         1,
+      );
+      assert.equal(
+        await fixture.db.pilotRole.count({
+          where: { merchantId: merchant.id, role: "OPERATOR" },
+        }),
+        3,
       );
       assert.deepEqual(
         (
@@ -169,17 +178,37 @@ test("bootstrap preserves existing OPERATOR and inactive OWNER without privilege
       }),
       inactive,
     );
+    const newRole = await ensurePilotRole({
+      db: fixture.db,
+      merchantId: merchant.id,
+      actor: "new-actor",
+    });
+    assert.equal(newRole?.role, "OPERATOR");
+    assert.equal(newRole?.grantedBy, "SYSTEM_SHOPIFY_STAFF_BOOTSTRAP");
     assert.equal(
-      await ensurePilotRole({
-        db: fixture.db,
-        merchantId: merchant.id,
-        actor: "new-actor",
-      }),
-      null,
+      (
+        await requirePilotRole({
+          db: fixture.db,
+          merchantId: merchant.id,
+          actor: "new-actor",
+          allowed: ["OPERATOR"],
+        })
+      ).role,
+      "OPERATOR",
+    );
+    await assert.rejects(
+      () =>
+        requirePilotRole({
+          db: fixture.db,
+          merchantId: merchant.id,
+          actor: "new-actor",
+          allowed: ["OWNER"],
+        }),
+      /OWNER/,
     );
     assert.equal(
       await fixture.db.pilotRole.count({ where: { merchantId: merchant.id } }),
-      2,
+      3,
     );
   } finally {
     await fixture.close();

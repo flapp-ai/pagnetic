@@ -206,10 +206,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         actor,
       });
       return {
-        ok: Boolean(drafted.experience),
+        // The UTM/ad mapping is a successful saved setup step even when the
+        // evidence-safe composer abstains. Keep the result informational and
+        // give the merchant a concrete recovery path instead of presenting a
+        // red application failure after valid configuration input.
+        ok: true,
         message: drafted.experience
           ? "The campaign promise is linked to a source-backed draft."
-          : "That campaign did not produce a distinct supported message. No treatment was created.",
+          : drafted.status === "NO_DISTINCT_DRAFT"
+            ? "Campaign mapping saved. An existing draft already covers the same supported message; review that draft instead of creating a duplicate."
+            : drafted.status === "UNSUPPORTED_SOURCE"
+              ? "Campaign mapping saved, but this product source is outside the supported low-risk English workflow. Choose another product or update its source before drafting."
+              : "Campaign mapping saved safely. This product needs at least three specific factual benefits, with one supporting the ad message, before Pagnetic can create a treatment. Choose another product or improve its description; Original remains active.",
       };
     }
     if (intent === "revise-draft") {
@@ -330,6 +338,13 @@ export function MessagesView({
                 <>
                   <h2>{data.diagnosis.gapType.replaceAll("_", " ").toLowerCase()}</h2>
                   <p>{data.diagnosis.rationale}</p>
+                  {data.diagnosis.status !== "DRAFT" ? (
+                    <p className={styles.muted}>
+                      No unsafe copy was invented. Choose another product or add
+                      three specific factual benefits to this product, then run
+                      the source review again.
+                    </p>
+                  ) : null}
                   <small>{data.diagnosis.mode.replaceAll("_", " ").toLowerCase()}</small>
                 </>
               ) : (
@@ -384,8 +399,15 @@ export function MessagesView({
         </section>
       ) : null}
       {data.product ? (
-        <details className={styles.advancedDetails}>
+        <details
+          className={styles.advancedDetails}
+          open={!draft && approvedMessages.length === 0}
+        >
           <summary>Match this product to one campaign</summary>
+          <p className={styles.muted}>
+            Enter the exact labels used by the ad link and paste the exact ad
+            message. Saving the mapping does not edit an ad or start a test.
+          </p>
           <Form className={styles.mappingForm} method="post">
             <input name="intent" type="hidden" value="campaign-draft" />
             <input name="productId" type="hidden" value={data.product.id} />
