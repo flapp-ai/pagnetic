@@ -2,7 +2,7 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, Link, useActionData, useLoaderData, useNavigation } from "react-router";
 
 import prisma from "../db.server";
-import { actorKey, ensurePilotRole, requirePilotRole } from "../services/access.server";
+import { actorKey } from "../services/access.server";
 import {
   pauseAutopilotPlan,
   resumeAutopilotPlan,
@@ -20,15 +20,17 @@ import {
 } from "../services/subscription-v2.server";
 import { subscriptionPresentation } from "../components/subscription-presentation";
 import { authenticateAdmin } from "../shopify.server";
+import { requirePilotRouteAction } from "../services/pilot-route-access.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
-  await ensurePilotRole({
+  const currentRole = await requirePilotRouteAction({
     db: prisma,
     merchantId: merchant.id,
     actor: actorKey(session.shop, sessionToken.sub),
+    action: "settings:view",
   });
   const providerConfigured = [
     process.env.SHOPIFY_PARTNER_ORGANIZATION_ID,
@@ -97,6 +99,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   return {
     shop: session.shop,
+    currentRole: currentRole.role,
     paused: Boolean(runtime?.killSwitch) || plan?.state === "PAUSED",
     plan,
     subscription: !providerConfigured || providerRefreshFailed
@@ -148,11 +151,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
   try {
-    await requirePilotRole({
+    if (!new Set(["verifySubscription", "pause", "resume"]).has(intent))
+      return { ok: false, message: "Unknown settings action." };
+    await requirePilotRouteAction({
       db: prisma,
       merchantId: merchant.id,
       actor,
-      allowed: ["OWNER", "OPERATOR"],
+      action:
+        intent === "verifySubscription"
+          ? "settings:verify-subscription"
+          : intent === "pause"
+            ? "settings:pause"
+            : "settings:resume",
     });
     const planId = String(form.get("planId") ?? "");
     if (intent === "verifySubscription") {
@@ -204,6 +214,16 @@ export function SettingsView({
   busy: boolean;
 }) {
   const subscriptionSummary = subscriptionPresentation(data.subscription);
+  const canOperate = data.currentRole === "OWNER" || data.currentRole === "OPERATOR";
+  const canExport = data.currentRole === "OWNER";
+  const servingHeading = !data.plan || data.paused
+    ? "Original storefront only"
+    : "Reviewed authority active";
+  const servingStatus = !data.plan
+    ? "No active plan"
+    : data.paused
+      ? "Paused"
+      : data.plan.state.replaceAll("_", " ");
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -214,18 +234,19 @@ export function SettingsView({
         </div>
       </header>
       {result ? <div className={result.ok ? styles.successMessage : styles.errorMessage} role="status">{result.message}</div> : null}
+      {!canOperate ? <p className={styles.muted}>Read-only setup access. Serving, billing, exports and operator workspaces require an explicit owner grant.</p> : null}
       <section className={styles.section}>
         <div className={styles.sectionHeading}>
-          <div><p className={styles.step}>Serving</p><h2>{data.paused ? "Original storefront only" : "Reviewed authority active"}</h2></div>
-          <span className={styles.statusBadge} data-status={data.paused ? "HOLD" : "COLLECTING"}>{data.paused ? "Paused" : data.plan?.state.replaceAll("_", " ") ?? "No active plan"}</span>
+          <div><p className={styles.step}>Serving</p><h2>{servingHeading}</h2></div>
+          <span className={styles.statusBadge} data-status={!data.plan || data.paused ? "HOLD" : "COLLECTING"}>{servingStatus}</span>
         </div>
-        {data.plan ? (
+        {data.plan && canOperate ? (
           <Form method="post">
             <input name="planId" type="hidden" value={data.plan.id} />
             <input name="intent" type="hidden" value={data.paused ? "resume" : "pause"} />
             <button className={data.paused ? styles.secondaryButton : styles.dangerButton} disabled={busy} type="submit">{data.paused ? "Resume reviewed plan" : "Pause and serve Original"}</button>
           </Form>
-        ) : <p>No active plan can change the storefront.</p>}
+        ) : <p>{data.plan ? "Serving controls are available only to an explicitly assigned owner or operator." : "No active plan can change the storefront."}</p>}
       </section>
       <section className={styles.section}>
         <p className={styles.step}>Subscription</p>
@@ -240,28 +261,28 @@ export function SettingsView({
         {data.subscription?.periodEnd && subscriptionSummary.date ? <p>Provider-confirmed date: {subscriptionSummary.date}.</p> : null}
         {data.subscription?.cancellationAt && !subscriptionSummary.date ? <p>Shopify recorded a cancellation event; the access end date is unavailable.</p> : null}
         {!data.offer?.publishable ? <p>New paid enrollment is not published. Pagnetic will not create a charge until Shopify billing and the offer launch gate are both explicitly enabled.</p> : null}
-        {data.providerConfigured ? <Form method="post"><input name="intent" type="hidden" value="verifySubscription" /><button className={styles.secondaryButton} disabled={busy} type="submit">Verify status with Shopify</button></Form> : <p>Shopify Partner API verification is not configured. Serving remains limited by the stored evaluation authority.</p>}
-        {data.pricingUrl ? <a className={styles.primaryButton} href={data.pricingUrl} target="_top" rel="noreferrer">{subscriptionSummary.requiresReapproval ? "Review or reapprove plan" : "View plans in Shopify"}</a> : null}
+        {canOperate && data.providerConfigured ? <Form method="post"><input name="intent" type="hidden" value="verifySubscription" /><button className={styles.secondaryButton} disabled={busy} type="submit">Verify status with Shopify</button></Form> : !data.providerConfigured ? <p>Shopify Partner API verification is not configured. Serving remains limited by the stored evaluation authority.</p> : null}
+        {canOperate && data.pricingUrl ? <a className={styles.primaryButton} href={data.pricingUrl} target="_top" rel="noreferrer">{subscriptionSummary.requiresReapproval ? "Review or reapprove plan" : "View plans in Shopify"}</a> : null}
       </section>
       <section className={styles.section}>
         <div className={styles.sectionHeading}><div><p className={styles.step}>Supported surfaces</p><h2>Evidence, not assumptions</h2></div></div>
         {data.surfaces.length ? <div className={styles.readinessList}>{data.surfaces.map((surface) => (
           <div key={`${surface.key}-${surface.capturedAt}`}><strong>{surface.key.replaceAll("_", " ")}</strong><span>{surface.status} · {surface.applicability}{surface.expiresAt ? ` · expires ${surface.expiresAt.slice(0, 10)}` : ""}</span></div>
         ))}</div> : <p>No current product-specific commerce QA evidence is recorded. Unknown capability remains pending, not silently supported.</p>}
-        <Link className={styles.secondaryButton} to="/app/setup">Open storefront verification</Link>
+        {canOperate ? <Link className={styles.secondaryButton} to="/app/setup">Open storefront verification</Link> : null}
       </section>
       <section className={styles.section}>
         <p className={styles.step}>Data and support</p>
         <h2>Your record</h2>
         <p>Raw event retention: {data.retention.rawDays} days. Aggregate/report retention: {data.retention.aggregateDays} days.</p>
         <div className={styles.actionRow}>
-          <a className={styles.secondaryButton} href="/app/settings/export">Export experiment record</a>
+          {canExport ? <a className={styles.secondaryButton} href="/app/settings/export">Export experiment record</a> : null}
           <Link className={styles.secondaryButton} to="/privacy">Privacy</Link>
           <Link className={styles.secondaryButton} to="/support">Support</Link>
         </div>
       </section>
-      {data.incidents.length ? <section className={styles.section}><p className={styles.step}>Open incidents</p><h2>Pagnetic is responsible for these checks</h2><div className={styles.noticeList}>{data.incidents.map((incident) => <article className={styles.noticeCard} key={incident.id}><strong>{incident.summary}</strong><p>{incident.category.replaceAll("_", " ")} · {incident.severity}</p></article>)}</div></section> : null}
-      <details className={styles.advancedDetails}><summary>Advanced/operator workspace</summary><div className={styles.cardGrid}><Link className={styles.workspaceCard} to="/app/governance"><strong>Governance</strong><span>Evidence and immutable approvals</span></Link><Link className={styles.workspaceCard} to="/app/measurement"><strong>Measurement</strong><span>Protocol and health detail</span></Link><Link className={styles.workspaceCard} to="/app/operations"><strong>Operations</strong><span>Incidents, audit and rollback</span></Link></div></details>
+      {canOperate && data.incidents.length ? <section className={styles.section}><p className={styles.step}>Open incidents</p><h2>Pagnetic is responsible for these checks</h2><div className={styles.noticeList}>{data.incidents.map((incident) => <article className={styles.noticeCard} key={incident.id}><strong>{incident.summary}</strong><p>{incident.category.replaceAll("_", " ")} · {incident.severity}</p></article>)}</div></section> : null}
+      {canOperate ? <details className={styles.advancedDetails}><summary>Advanced/operator workspace</summary><div className={styles.cardGrid}><Link className={styles.workspaceCard} to="/app/governance"><strong>Governance</strong><span>Evidence and immutable approvals</span></Link><Link className={styles.workspaceCard} to="/app/measurement"><strong>Measurement</strong><span>Protocol and health detail</span></Link><Link className={styles.workspaceCard} to="/app/operations"><strong>Operations</strong><span>Incidents, audit and rollback</span></Link></div></details> : null}
     </main>
   );
 }

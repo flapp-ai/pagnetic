@@ -11,15 +11,14 @@ import { AdaptivePackageReviewPanel } from "../components/adaptive-package-revie
 import { approvedMessageSummaries, previewExperienceHref } from "../services/approved-message-presentation";
 
 import prisma from "../db.server";
-import { actorKey, ensurePilotRole, requirePilotRole } from "../services/access.server";
+import { actorKey, ensurePilotRole } from "../services/access.server";
 import {
   approveExperience,
   buildDraftLibrary,
-  createCampaignMapping,
+  createSourceBackedCampaignDraft,
   ensureMerchant,
   reviseDraftExperience,
 } from "../services/governance.server";
-import { createDiagnosisDraftV2 } from "../services/message-diagnosis-v2.server";
 import {
   approveAdaptivePackageReview,
   buildAdaptiveApprovedPackage,
@@ -27,6 +26,7 @@ import {
   parseAdaptiveApprovedPackage,
 } from "../services/adaptive-package.server";
 import { authenticateAdmin } from "../shopify.server";
+import { requirePilotRouteAction } from "../services/pilot-route-access.server";
 import styles from "../styles/governance.module.css";
 
 function parseSource(value: string) {
@@ -38,6 +38,85 @@ function parseSource(value: string) {
   } catch {
     return {};
   }
+}
+
+type CampaignFormValues = {
+  utmSource: string;
+  utmCampaign: string;
+  utmContent: string;
+  angleId: string;
+  campaignAdText: string;
+};
+
+function campaignFormValues(form: FormData): CampaignFormValues {
+  return {
+    utmSource: String(form.get("utmSource") ?? ""),
+    utmCampaign: String(form.get("utmCampaign") ?? ""),
+    utmContent: String(form.get("utmContent") ?? ""),
+    angleId: String(form.get("angleId") ?? ""),
+    campaignAdText: String(form.get("campaignAdText") ?? ""),
+  };
+}
+
+function campaignActionError(error: unknown) {
+  if (!(error instanceof Error)) return "The campaign setup could not be saved. Review the fields and try again.";
+  const messages: Record<string, string> = {
+    DIAGNOSIS_EVIDENCE_LINK_MISSING:
+      "The campaign was not drafted because this product's current facts have not completed source review. Refresh the source review, then try again. Original remains active.",
+    CAMPAIGN_EVIDENCE_REQUIRED:
+      "Paste the exact campaign message so Pagnetic can verify the proposed storefront message.",
+    CAMPAIGN_EVIDENCE_CHANGED:
+      "The saved campaign evidence changed. Review the exact ad message and submit it again.",
+    CAMPAIGN_EVIDENCE_INVALID:
+      "The exact ad message could not be read safely. Review it and submit again.",
+  };
+  if (messages[error.message]) return messages[error.message];
+  if (
+    /^(Select a valid synced product|Current product-title evidence is missing|No distinct source-backed campaign message could be created|This product is outside the supported low-risk English workflow|Pagnetic could not create a source-backed campaign message)/.test(
+      error.message,
+    )
+  ) return error.message;
+  return "The campaign setup could not be completed safely. Your storefront remains Original; review the product facts and campaign fields, then try again.";
+}
+
+export function diagnosisUiState(args: {
+  status: string;
+  hasCurrentDraft: boolean;
+  stale: boolean;
+}) {
+  if (args.stale || ["STALE", "INVALIDATED", "EXPIRED"].includes(args.status)) {
+    return {
+      kind: "stale" as const,
+      title: "Source review out of date",
+      detail: "The product facts changed after this review. Refresh the source review before using its message.",
+    };
+  }
+  if (args.status === "EXPERIENCE_DRAFTED" || (args.status === "DRAFT" && args.hasCurrentDraft)) {
+    return {
+      kind: "success" as const,
+      title: "Source-backed draft ready",
+      detail: "Review the exact proposed message and its sources below. Nothing reaches shoppers until it is approved.",
+    };
+  }
+  if (args.status === "UNSUPPORTED_SOURCE") {
+    return {
+      kind: "abstained" as const,
+      title: "Source outside the supported workflow",
+      detail: "No unsafe copy was invented. Choose another product or update this product's English source facts, then refresh the review.",
+    };
+  }
+  if (args.status === "NO_SUPPORTED_OPPORTUNITY") {
+    return {
+      kind: "abstained" as const,
+      title: "No supported message opportunity",
+      detail: "No unsafe copy was invented. Add specific factual product benefits or choose another product, then refresh the review.",
+    };
+  }
+  return {
+    kind: "pending" as const,
+    title: "Source review needs a refresh",
+    detail: "No current draft is linked to this review. Refresh it before creating or approving a message.",
+  };
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -128,6 +207,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           gapType: product.messageDiagnoses[0].gapType,
           rationale: product.messageDiagnoses[0].rationale,
           status: product.messageDiagnoses[0].status,
+          stale:
+            product.messageDiagnoses[0].sourceVersion !== product.sourceVersion ||
+            Boolean(
+              product.messageDiagnoses[0].expiresAt &&
+              product.messageDiagnoses[0].expiresAt <= new Date(),
+            ),
         }
       : null,
     experiences: (product?.experiences ?? []).map((experience) => ({
@@ -163,15 +248,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const actor = actorKey(session.shop, sessionToken.sub);
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
+  const submittedCampaign = intent === "campaign-draft" ? campaignFormValues(form) : null;
   try {
-    await requirePilotRole({
-      db: prisma,
-      merchantId: merchant.id,
-      actor,
-      allowed: ["OWNER", "OPERATOR"],
-    });
     const productId = String(form.get("productId") ?? "");
     if (intent === "build-draft") {
+      await requirePilotRouteAction({ db: prisma, merchantId: merchant.id, actor, action: "messages:build-draft" });
       const result = await buildDraftLibrary({
         db: prisma,
         merchantId: merchant.id,
@@ -186,9 +267,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     }
     if (intent === "campaign-draft") {
-      const mapping = await createCampaignMapping({
+      await requirePilotRouteAction({ db: prisma, merchantId: merchant.id, actor, action: "messages:campaign-draft" });
+      await createSourceBackedCampaignDraft({
         db: prisma,
         merchantId: merchant.id,
+        productId,
         angleId: String(form.get("angleId") ?? ""),
         utmSource: String(form.get("utmSource") ?? ""),
         utmCampaign: String(form.get("utmCampaign") ?? ""),
@@ -198,29 +281,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         fallback: "ORIGINAL",
         actor,
       });
-      const drafted = await createDiagnosisDraftV2({
-        db: prisma,
-        merchantId: merchant.id,
-        productId,
-        campaignMappingId: mapping.id,
-        actor,
-      });
       return {
-        // The UTM/ad mapping is a successful saved setup step even when the
-        // evidence-safe composer abstains. Keep the result informational and
-        // give the merchant a concrete recovery path instead of presenting a
-        // red application failure after valid configuration input.
         ok: true,
-        message: drafted.experience
-          ? "The campaign promise is linked to a source-backed draft."
-          : drafted.status === "NO_DISTINCT_DRAFT"
-            ? "Campaign mapping saved. An existing draft already covers the same supported message; review that draft instead of creating a duplicate."
-            : drafted.status === "UNSUPPORTED_SOURCE"
-              ? "Campaign mapping saved, but this product source is outside the supported low-risk English workflow. Choose another product or update its source before drafting."
-              : "Campaign mapping saved safely. This product needs at least three specific factual benefits, with one supporting the ad message, before Pagnetic can create a treatment. Choose another product or improve its description; Original remains active.",
+        message: "The campaign promise is linked to a source-backed draft.",
+        campaignForm: submittedCampaign,
       };
     }
     if (intent === "revise-draft") {
+      await requirePilotRouteAction({ db: prisma, merchantId: merchant.id, actor, action: "messages:revise-draft" });
       await reviseDraftExperience({
         db: prisma,
         merchantId: merchant.id,
@@ -235,12 +303,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { ok: true, message: "Draft updated and revalidated against exact source evidence." };
     }
     if (intent === "approve-message") {
-      await requirePilotRole({
-        db: prisma,
-        merchantId: merchant.id,
-        actor,
-        allowed: ["OWNER"],
-      });
+      await requirePilotRouteAction({ db: prisma, merchantId: merchant.id, actor, action: "messages:approve-message" });
       await approveExperience({
         db: prisma,
         merchantId: merchant.id,
@@ -250,7 +313,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { ok: true, message: "Message approved. Test approval remains a separate bounded step." };
     }
     if (intent === "prepare-adaptive-package") {
-      await requirePilotRole({ db: prisma, merchantId: merchant.id, actor, allowed: ["OWNER"] });
+      await requirePilotRouteAction({ db: prisma, merchantId: merchant.id, actor, action: "messages:prepare-adaptive-package" });
       const approved = await buildAdaptiveApprovedPackage({ db: prisma, merchantId: merchant.id, productId });
       if (approved.coverage.mappedBundles === 0) {
         return {
@@ -267,7 +330,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     }
     if (intent === "approve-adaptive-package") {
-      await requirePilotRole({ db: prisma, merchantId: merchant.id, actor, allowed: ["OWNER"] });
+      await requirePilotRouteAction({ db: prisma, merchantId: merchant.id, actor, action: "messages:approve-adaptive-package" });
       const review = await approveAdaptivePackageReview({ db: prisma, merchantId: merchant.id, productId, reviewId: String(form.get("reviewId") ?? ""), actor });
       return { ok: true, message: `Adaptive package ${review.id} approved. Deployment still requires the registered experiment preparation gate.` };
     }
@@ -275,7 +338,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } catch (error) {
     return {
       ok: false,
-      message: error instanceof Error ? error.message : "The message action failed.",
+      message: intent === "campaign-draft"
+        ? campaignActionError(error)
+        : error instanceof Error ? error.message : "The message action failed.",
+      campaignForm: submittedCampaign,
     };
   }
 };
@@ -292,6 +358,16 @@ export function MessagesView({
   const draft = data.experiences.find((experience) => experience.status === "DRAFT");
   const approvedMessages = approvedMessageSummaries(data.experiences, data.product?.id ?? "");
   const adaptiveReview = data.packageReview?.package ?? null;
+  const diagnosisState = data.diagnosis
+    ? diagnosisUiState({
+        status: data.diagnosis.status,
+        hasCurrentDraft: Boolean(draft),
+        stale: data.diagnosis.stale,
+      })
+    : null;
+  const campaignForm = result && "campaignForm" in result
+    ? result.campaignForm
+    : null;
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -336,16 +412,17 @@ export function MessagesView({
               <p className={styles.step}>Diagnosis</p>
               {data.diagnosis ? (
                 <>
-                  <h2>{data.diagnosis.gapType.replaceAll("_", " ").toLowerCase()}</h2>
+                  <h2>{diagnosisState?.title}</h2>
                   <p>{data.diagnosis.rationale}</p>
-                  {data.diagnosis.status !== "DRAFT" ? (
-                    <p className={styles.muted}>
-                      No unsafe copy was invented. Choose another product or add
-                      three specific factual benefits to this product, then run
-                      the source review again.
-                    </p>
-                  ) : null}
-                  <small>{data.diagnosis.mode.replaceAll("_", " ").toLowerCase()}</small>
+                  <p className={styles.muted}>{diagnosisState?.detail}</p>
+                  <small>
+                    {data.diagnosis.gapType.replaceAll("_", " ").toLowerCase()} · {data.diagnosis.mode.replaceAll("_", " ").toLowerCase()}
+                  </small>
+                  <Form method="post">
+                    <input name="intent" type="hidden" value="build-draft" />
+                    <input name="productId" type="hidden" value={data.product.id} />
+                    <button className={styles.secondaryButton} disabled={busy} type="submit">Refresh source review</button>
+                  </Form>
                 </>
               ) : (
                 <>
@@ -411,11 +488,11 @@ export function MessagesView({
           <Form className={styles.mappingForm} method="post">
             <input name="intent" type="hidden" value="campaign-draft" />
             <input name="productId" type="hidden" value={data.product.id} />
-            <label>UTM source<input name="utmSource" placeholder="meta" required /></label>
-            <label>UTM campaign<input name="utmCampaign" placeholder="launch" required /></label>
-            <label>UTM content<input name="utmContent" placeholder="video-01" /></label>
-            <label>Message angle<select name="angleId" required>{data.angles.map((angle) => <option key={angle.id} value={angle.id}>{angle.label}</option>)}</select></label>
-            <label className={styles.wideField}>Exact ad message<textarea maxLength={2000} name="campaignAdText" required rows={4} /></label>
+            <label>UTM source<input defaultValue={campaignForm?.utmSource ?? ""} name="utmSource" placeholder="meta" required /></label>
+            <label>UTM campaign<input defaultValue={campaignForm?.utmCampaign ?? ""} name="utmCampaign" placeholder="launch" required /></label>
+            <label>UTM content<input defaultValue={campaignForm?.utmContent ?? ""} name="utmContent" placeholder="video-01" /></label>
+            <label>Message angle<select defaultValue={campaignForm?.angleId ?? data.angles[0]?.id ?? ""} name="angleId" required>{data.angles.map((angle) => <option key={angle.id} value={angle.id}>{angle.label}</option>)}</select></label>
+            <label className={styles.wideField}>Exact ad message<textarea defaultValue={campaignForm?.campaignAdText ?? ""} maxLength={2000} name="campaignAdText" required rows={4} /></label>
             <button className={styles.primaryButton} disabled={busy} type="submit">Create campaign draft</button>
           </Form>
         </details>

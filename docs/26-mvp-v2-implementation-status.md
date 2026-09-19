@@ -1,5 +1,13 @@
 # Pagnetic MVP v2 — implementation status
 
+## Reviewer-remediation candidate passed locally — 2026-09-19
+
+The four follow-up QA blockers are fixed locally: least-privilege SETUP access, atomic fresh campaign drafting, stale source/draft invalidation, and truthful retry/status UI. The integrated release gate passes **457/457 tests**, typecheck, lint, production app build and Shopify extension build. [Implementation, evidence and post-approval live sequence](./100-shopify-reviewer-fix-plan-20260919.md). The live Fly release and Shopify submission are unchanged; live reviewer-store proof and explicit release/resubmission approval remain required.
+
+## Release hold after reviewer-style QA — 2026-09-19
+
+Candidate1a46c31 is **not release ready**. Fresh-install campaign drafting, automatic staff privileges, stale drafts and diagnosis/retry UI require correction despite the earlier passing suite. [Findings, reproduced evidence and remaining real-store gates](./99-shopify-reviewer-qa-20260919.md). No deployment or resubmission was performed. This verdict supersedes the candidate-readiness implication below.
+
 ## Shopify reviewer-store action needed — 2026-09-19
 
 Shopify kept requirement 2.1.1 open and requested store-specific configuration/video evidence. Fresh invited-store reproduction confirms the previously repaired embedded app renders, but exposed two new onboarding defects: later Shopify staff had no Pagnetic role, and Shopify plaintext flattened rich-text product lists so valid evidence could abstain. A local candidate now auto-provisions later authenticated staff as non-owner Operators, preserves HTML evidence boundaries only when plaintext is insufficient, opens/explains campaign setup, and turns safe abstention into actionable saved-configuration feedback. Full `pnpm check` passes445/445 plus typecheck, lint, app build and extension build. The candidate is **not deployed**; reviewer-store configuration/video and Shopify response remain pending owner release approval. [Exact evidence and post-approval sequence](./98-shopify-reviewer-store-remediation-20260919.md).

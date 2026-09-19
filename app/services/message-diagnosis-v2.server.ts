@@ -8,6 +8,16 @@ import {
   type DiagnosisSource,
 } from "./message-diagnosis-v2";
 
+type DiagnosisDb = PrismaClient | Prisma.TransactionClient;
+
+async function inTransaction<T>(
+  db: DiagnosisDb,
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
+) {
+  if ("$transaction" in db) return db.$transaction(operation);
+  return operation(db);
+}
+
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value && typeof value === "object") {
@@ -43,7 +53,7 @@ function productSource(product: {
 }
 
 export async function persistMessageDiagnosisV2(args: {
-  db: PrismaClient;
+  db: DiagnosisDb;
   merchantId: string;
   productId: string;
   campaignMappingId?: string;
@@ -126,7 +136,7 @@ export async function persistMessageDiagnosisV2(args: {
   });
   if (existing) return { record: existing, diagnosis };
 
-  const record = await args.db.$transaction(async (tx) => {
+  const record = await inTransaction(args.db, async (tx) => {
     await args.assertActive?.(tx);
     const created = await tx.messageDiagnosis.create({
       data: {
@@ -195,7 +205,7 @@ function runtimeContentHash(candidate: MessageCandidate) {
 }
 
 export async function createDiagnosisDraftV2(args: {
-  db: PrismaClient;
+  db: DiagnosisDb;
   merchantId: string;
   productId: string;
   campaignMappingId?: string;
@@ -298,7 +308,7 @@ export async function createDiagnosisDraftV2(args: {
     where: { productId: args.productId, angleId },
     _max: { version: true },
   });
-  const experience = await args.db.$transaction(async (tx) => {
+  const experience = await inTransaction(args.db, async (tx) => {
     await args.assertActive?.(tx);
     const created = await tx.experienceVersion.create({
       data: {

@@ -28,6 +28,13 @@ test("Shopify HTML descriptions preserve bullet and paragraph evidence boundarie
     ),
     "First fact. Second fact. Third fact.",
   );
+  assert.equal(
+    productDescriptionText(
+      "Dive into your day with the magic of the sea! The Ariel Mug is inspired by an adventurous mermaid. High-quality ceramic construction Comfortable handle for a cozy grip Dishwasher and microwave safe A must-have for fans.",
+      "<p>Dive into your day with the magic of the sea!</p><p>The Ariel Mug is inspired by an adventurous mermaid.</p><ul><li>High-quality ceramic construction</li><li>Comfortable handle for a cozy grip</li><li>Dishwasher and microwave safe</li><li>A must-have for fans.</li></ul>",
+    ),
+    "Dive into your day with the magic of the sea! • The Ariel Mug is inspired by an adventurous mermaid. • High-quality ceramic construction • Comfortable handle for a cozy grip • Dishwasher and microwave safe • A must-have for fans.",
+  );
 
   const reviewerProduct = productDescriptionText(
     "High-quality ceramic construction Comfortable handle Dishwasher safe A must-have for fans",

@@ -3,12 +3,21 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { NavLink, Outlet, useLoaderData, useRouteError } from "react-router";
 
+import prisma from "../db.server";
+import { actorKey, ensurePilotRole } from "../services/access.server";
+import { ensureMerchant } from "../services/governance.server";
 import { authenticateAdmin } from "../shopify.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticateAdmin(request);
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  const { session, sessionToken } = await authenticateAdmin(request);
+  const merchant = await ensureMerchant(prisma, session.shop);
+  const role = await ensurePilotRole({
+    db: prisma,
+    merchantId: merchant.id,
+    actor: actorKey(session.shop, sessionToken.sub),
+  });
+  return { apiKey: process.env.SHOPIFY_API_KEY || "", role: role.role };
 };
 
 export default function AppLayout() {
@@ -20,6 +29,7 @@ export default function AppLayout() {
         <NavLink end to="/app">
           Overview
         </NavLink>
+        <NavLink to="/app/get-started">Get started</NavLink>
         <NavLink to="/app/messages">Messages</NavLink>
         <NavLink to="/app/results">Results</NavLink>
         <NavLink to="/app/settings">Settings</NavLink>

@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 
-export type PilotRoleName = "OWNER" | "OPERATOR" | "VIEWER";
+export type PilotRoleName = "OWNER" | "OPERATOR" | "SETUP" | "VIEWER";
 
 export function actorKey(
   shop: string,
@@ -50,13 +50,11 @@ export async function ensurePilotRole(args: {
         data: {
           merchantId: args.merchantId,
           actorKey: args.actor,
-          // Shopify has already authenticated this user and limited access to
-          // staff who can open the installed app. Keep the first authenticated
-          // user as the app owner, then give later authenticated staff only the
-          // non-privileged operator role so they can complete onboarding. Owner-
-          // only approvals, privacy access, billing and role grants remain
-          // protected by their existing explicit checks.
-          role: count === 0 ? "OWNER" : "OPERATOR",
+          // Keep first-use bootstrap deterministic, but do not turn every
+          // Shopify-authenticated staff member into an operator. SETUP is an
+          // intentionally narrow role used only by explicitly listed catalog
+          // and draft-configuration actions.
+          role: count === 0 ? "OWNER" : "SETUP",
           grantedBy:
             count === 0
               ? "SYSTEM_BOOTSTRAP"
@@ -117,7 +115,7 @@ export async function grantPilotRole(args: {
     allowed: ["OWNER"],
   });
   const role = args.role.toUpperCase() as PilotRoleName;
-  if (!new Set<PilotRoleName>(["OWNER", "OPERATOR", "VIEWER"]).has(role))
+  if (!new Set<PilotRoleName>(["OWNER", "OPERATOR", "SETUP", "VIEWER"]).has(role))
     throw new Error("Select a valid pilot role.");
   if (!/^\d{1,30}$/.test(args.shopifyUserId))
     throw new Error("Provide the Shopify staff user ID.");

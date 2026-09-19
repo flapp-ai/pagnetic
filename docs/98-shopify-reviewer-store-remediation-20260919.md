@@ -1,6 +1,8 @@
 # Shopify reviewer-store remediation candidate — September 19, 2026
 
-Status: **LOCAL RELEASE CANDIDATE — NOT DEPLOYED OR RESUBMITTED**
+Status: **SUPERSEDED BY INTEGRATED FIX — NOT DEPLOYED OR RESUBMITTED**
+
+The [reviewer-style QA](./99-shopify-reviewer-qa-20260919.md) found missing fresh-campaign prerequisites, overbroad automatic Operator access, stale drafts and incorrect diagnosis feedback. Those findings are fixed in the [integrated candidate and current release gate](./100-shopify-reviewer-fix-plan-20260919.md). The candidate and sequence below remain historical proposals; do not deploy them independently.
 
 ## Current Shopify feedback
 
@@ -44,4 +46,3 @@ Shopify kept requirement 2.1.1 open after its reviewer store first showed a blan
 6. Record one continuous English screencast in Shopify's store showing install access, product selection, UTM/ad configuration, source-backed draft, exact evidence, Original fallback, and navigation without HTTP errors. Do not expose tokens, customer/order details, or claim lift.
 7. Host the reviewed video at the existing bounded reviewer path, confirm HTTP 200/full playback, and prepare the requirement 2.1.1 proof text.
 8. Stop for owner approval before sending the Shopify response or clicking the final resubmission control.
-

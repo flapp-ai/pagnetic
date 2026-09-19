@@ -357,7 +357,7 @@ export function ResultsView({
         <Form className={styles.inlineForm} method="get">
           <label>
             Experiment
-            <select defaultValue={data.selected?.id ?? ""} name="experimentId">
+            <select disabled={data.experiments.length === 0} defaultValue={data.selected?.id ?? ""} name="experimentId">
               {data.experiments.map((experiment) => (
                 <option key={experiment.id} value={experiment.id}>
                   {experiment.label}
@@ -365,10 +365,13 @@ export function ResultsView({
               ))}
             </select>
           </label>
-          <button className={styles.secondaryButton} type="submit">
+          <button className={styles.secondaryButton} disabled={data.experiments.length === 0} type="submit">
             Show result
           </button>
         </Form>
+        {data.experiments.length === 0 ? (
+          <p className={styles.muted}>There is no result to show until a reviewed plan starts an experiment.</p>
+        ) : null}
       </section>
       {!data.selected ? (
         <section className={styles.section}>

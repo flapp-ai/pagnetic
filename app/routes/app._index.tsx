@@ -65,7 +65,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
-  await ensurePilotRole({ db: prisma, merchantId: merchant.id, actor });
+  const currentRole = await ensurePilotRole({ db: prisma, merchantId: merchant.id, actor });
   const pricingPlanHandle = new URL(request.url).searchParams.get("plan_handle");
   const providerConfigured = [
     process.env.SHOPIFY_PARTNER_ORGANIZATION_ID,
@@ -330,6 +330,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   return {
     shop: session.shop,
+    currentRole: currentRole.role,
     preparationError,
     preparationPending,
     v2CutoverSelected,
@@ -744,6 +745,7 @@ export function DashboardView({
   }
 
   const message = actionData ?? themeFetcher.data;
+  const canOperate = data.currentRole === "OWNER" || data.currentRole === "OPERATOR";
   const live =
     view.plan &&
     ["VERIFYING", "AA_RUNNING", "REAL_TEST_RUNNING", "RESULT_READY"].includes(
@@ -853,17 +855,21 @@ export function DashboardView({
           <a className={styles.primaryButton} href="#opportunity">
             Review opportunity →
           </a>
-        ) : view.plan && ["APPROVED", "WAITING_FOR_THEME"].includes(view.plan.state) ? (
+        ) : canOperate && view.plan && ["APPROVED", "WAITING_FOR_THEME"].includes(view.plan.state) ? (
           <ThemeEditorLink className={styles.primaryButton} href={data.themeEditorUrl}>
             Open theme editor →
           </ThemeEditorLink>
-        ) : !view.plan ? (
+        ) : canOperate && !view.plan ? (
           <Form method="post">
             <input name="intent" type="hidden" value="prepare" />
             <button className={styles.primaryButton} disabled={busy} type="submit">
               Prepare opportunity →
             </button>
           </Form>
+        ) : !canOperate ? (
+          <Link className={styles.primaryButton} to="/app/get-started">
+            Configure safely →
+          </Link>
         ) : (
           <strong>
             {view.merchantState.primaryAction?.label ??
@@ -876,7 +882,7 @@ export function DashboardView({
         )}
       </section>
 
-      {data.v2CutoverSelected &&
+      {canOperate && data.v2CutoverSelected &&
       view.plan?.orchestrationProtocolVersion ===
         LEGACY_AUTOPILOT_PLAN_PROTOCOL_VERSION &&
       (view.plan.state !== "INVALIDATED" ||
@@ -916,7 +922,7 @@ export function DashboardView({
         </section>
       ) : null}
 
-      {data.v2Reselection ? (
+      {canOperate && data.v2Reselection ? (
         <section className={styles.section} aria-labelledby="v2-reselect-title">
           <p className={styles.step}>No supported opportunity on the prior product</p>
           <h2 id="v2-reselect-title">Select another current, active test product</h2>
@@ -978,7 +984,7 @@ export function DashboardView({
         </section>
       ) : null}
 
-      {data.v2ReinstallRecovery ? (
+      {canOperate && data.v2ReinstallRecovery ? (
         <section className={styles.section} aria-labelledby="v2-reinstall-recovery-title">
           <p className={styles.step}>Reinstall recovery</p>
           <h2 id="v2-reinstall-recovery-title">Prepare a fresh plan after reinstall</h2>
@@ -997,7 +1003,7 @@ export function DashboardView({
         </section>
       ) : null}
 
-      {data.v2CutoverSelected &&
+      {canOperate && data.v2CutoverSelected &&
       view.plan?.orchestrationProtocolVersion ===
         MVP_V2_AUTOPILOT_PLAN_PROTOCOL_VERSION &&
       view.plan.state === "VERIFYING" ? (
@@ -1064,7 +1070,7 @@ export function DashboardView({
               <article className={styles.noticeCard} key={notice.id}>
                 <strong>{notice.title}</strong>
                 <p>{notice.detail}</p>
-                {notice.actionLabel && notice.actionHref ? (
+                {canOperate && notice.actionLabel && notice.actionHref ? (
                   <a className={styles.secondaryButton} href={notice.actionHref}>
                     {notice.actionLabel}
                   </a>
@@ -1072,7 +1078,7 @@ export function DashboardView({
               </article>
             ))}
           </div>
-          {view.candidates.length > 1 && view.notices.some((notice) => notice.kind === "CANDIDATE_TIE") ? (
+          {canOperate && view.candidates.length > 1 && view.notices.some((notice) => notice.kind === "CANDIDATE_TIE") ? (
             <div className={styles.candidateChoices}>
               {view.candidates.map((candidate) => (
                 <Form method="post" key={candidate.productId}>
@@ -1168,7 +1174,7 @@ export function DashboardView({
             <p>
               Pagnetic will never change price, discounts, inventory, checkout, product images, or unapproved claims.
             </p>
-            <Form method="post">
+            {canOperate ? <Form method="post">
               <input name="intent" type="hidden" value="approve-plan" />
               <input name="planId" type="hidden" value={view.plan.id} />
               <input name="planHash" type="hidden" value={view.plan.planHash} />
@@ -1181,12 +1187,12 @@ export function DashboardView({
               <button className={styles.primaryButton} disabled={busy} type="submit">
                 Approve and prepare test
               </button>
-            </Form>
+            </Form> : <p>Only an explicitly assigned owner can approve and prepare this test.</p>}
           </div>
         </section>
       ) : null}
 
-      {view.plan && offerThemeVerification ? (
+      {canOperate && view.plan && offerThemeVerification ? (
         <section className={styles.section} aria-labelledby="enable-title">
           <p className={styles.step}>
             {recapturingReleaseEvidence
@@ -1241,7 +1247,7 @@ export function DashboardView({
         </section>
       ) : null}
 
-      {view.plan && ["VERIFYING", "AA_RUNNING", "REAL_TEST_RUNNING"].includes(view.plan.state) ? (
+      {canOperate && view.plan && ["VERIFYING", "AA_RUNNING", "REAL_TEST_RUNNING"].includes(view.plan.state) ? (
         <section className={styles.safetyBar} aria-label="Storefront safety control">
           <div>
             <strong>{view.safety.originalServing ? "Original fallback protected" : "Approved test is serving"}</strong>
@@ -1255,7 +1261,7 @@ export function DashboardView({
         </section>
       ) : null}
 
-      {view.plan?.state === "PAUSED" ? (
+      {canOperate && view.plan?.state === "PAUSED" ? (
         <section className={styles.safetyBar} aria-label="Resume Autopilot">
           <div>
             <strong>Autopilot is paused</strong>
@@ -1269,14 +1275,14 @@ export function DashboardView({
         </section>
       ) : null}
 
-      <details className={styles.advancedDetails}>
+      {canOperate ? <details className={styles.advancedDetails}>
         <summary>Advanced details and evidence</summary>
         <div className={styles.cardGrid}>
-          <Link className={styles.workspaceCard} to="/app/governance">
-            <strong>Content and evidence</strong><span>Sources, claims and immutable approvals</span>
-          </Link>
           <Link className={styles.workspaceCard} to="/app/setup">
             <strong>Storefront verification</strong><span>Qualification, theme and checkout QA</span>
+          </Link>
+          <Link className={styles.workspaceCard} to="/app/governance">
+            <strong>Content and evidence</strong><span>Sources, claims and immutable approvals</span>
           </Link>
           <Link className={styles.workspaceCard} to="/app/measurement">
             <strong>Measurement protocol</strong><span>A/A health, registration and reports</span>
@@ -1295,7 +1301,7 @@ export function DashboardView({
             ))}
           </ol>
         ) : null}
-      </details>
+      </details> : null}
     </main>
   );
 }

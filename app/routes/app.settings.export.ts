@@ -1,17 +1,19 @@
 import type { LoaderFunctionArgs } from "react-router";
 
 import prisma from "../db.server";
-import { actorKey, ensurePilotRole } from "../services/access.server";
+import { actorKey } from "../services/access.server";
 import { ensureMerchant } from "../services/governance.server";
+import { requirePilotRouteAction } from "../services/pilot-route-access.server";
 import { authenticateAdmin } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
-  await ensurePilotRole({
+  await requirePilotRouteAction({
     db: prisma,
     merchantId: merchant.id,
     actor: actorKey(session.shop, sessionToken.sub),
+    action: "settings:export",
   });
   const [products, diagnoses, experiments, deployments, subscription] = await Promise.all([
     prisma.product.findMany({

@@ -11,7 +11,6 @@ import prisma from "../db.server";
 import {
   actorKey,
   ensurePilotRole,
-  requirePilotRole,
 } from "../services/access.server";
 import {
   loadActivation,
@@ -24,6 +23,7 @@ import {
   syncProducts,
 } from "../services/governance.server";
 import { authenticateAdmin } from "../shopify.server";
+import { requirePilotRouteAction } from "../services/pilot-route-access.server";
 import styles from "../styles/governance.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -89,11 +89,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = String(formData.get("intent") ?? "");
   try {
     if (intent === "sync-products") {
-      await requirePilotRole({
+      await requirePilotRouteAction({
         db: prisma,
         merchantId: merchant.id,
         actor,
-        allowed: ["OWNER", "OPERATOR"],
+        action: "get-started:sync-products",
       });
       const result = await syncProducts({
         db: prisma,
@@ -107,11 +107,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     }
     if (intent === "select-hero") {
-      await requirePilotRole({
+      await requirePilotRouteAction({
         db: prisma,
         merchantId: merchant.id,
         actor,
-        allowed: ["OWNER", "OPERATOR"],
+        action: "get-started:select-hero",
       });
       const product = await selectHeroProduct({
         db: prisma,
@@ -125,11 +125,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     }
     if (intent === "approve-brand") {
-      await requirePilotRole({
+      await requirePilotRouteAction({
         db: prisma,
         merchantId: merchant.id,
         actor,
-        allowed: ["OWNER"],
+        action: "get-started:approve-brand",
       });
       await approveBrandProfile({ db: prisma, merchantId: merchant.id, actor });
       return {
@@ -139,11 +139,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       };
     }
     if (intent === "build-library") {
-      await requirePilotRole({
+      await requirePilotRouteAction({
         db: prisma,
         merchantId: merchant.id,
         actor,
-        allowed: ["OWNER"],
+        action: "get-started:build-library",
       });
       const activation = await loadActivation({
         db: prisma,

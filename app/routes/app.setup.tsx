@@ -15,6 +15,7 @@ import {
   grantPilotRole,
   requirePilotRole,
 } from "../services/access.server";
+import { requirePilotRouteAction } from "../services/pilot-route-access.server";
 import { decryptField } from "../services/field-encryption.server";
 import { ensureMerchant } from "../services/governance.server";
 import {
@@ -291,6 +292,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { ok: true, message: "Pilot QA evidence saved." };
     }
     if (intent === "grant-role") {
+      await requirePilotRouteAction({
+        db: prisma,
+        merchantId: merchant.id,
+        actor,
+        action: "setup:grant-role",
+      });
       const role = await grantPilotRole({
         db: prisma,
         merchantId: merchant.id,
@@ -815,9 +822,9 @@ export default function PilotSetup() {
           </p>
         </div>
         <p className={styles.muted}>
-          Shopify-authenticated staff who can open Pagnetic receive Operator
-          access automatically for setup work. Owner-only approvals, privacy
-          access, billing controls, and role grants remain restricted.
+          Shopify-authenticated staff who can open Pagnetic receive limited
+          Setup access automatically. Serving controls, approvals, publishing,
+          privacy access, billing controls, and role grants remain restricted.
         </p>
         <Form className={styles.inlineForm} method="post">
           <input name="intent" type="hidden" value="grant-role" />
@@ -828,6 +835,7 @@ export default function PilotSetup() {
           <label>
             Role
             <select name="role">
+              <option value="SETUP">Setup</option>
               <option value="OPERATOR">Operator</option>
               <option value="VIEWER">Viewer</option>
               <option value="OWNER">Owner</option>

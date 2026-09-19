@@ -10,9 +10,9 @@ import {
 import prisma from "../db.server";
 import {
   actorKey,
-  ensurePilotRole,
   requirePilotRole,
 } from "../services/access.server";
+import { requirePilotRouteAction } from "../services/pilot-route-access.server";
 import { decryptField } from "../services/field-encryption.server";
 import { runMerchantAutomation } from "../services/automation.server";
 import { ensureMerchant } from "../services/governance.server";
@@ -188,10 +188,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
-  const currentRole = await ensurePilotRole({
+  const currentRole = await requirePilotRouteAction({
     db: prisma,
     merchantId: merchant.id,
     actor,
+    action: "operations:view",
   });
   const shopHashes = privacyLookupKeys().secrets.map((key) => privacyHash(key, session.shop));
   const [
@@ -369,11 +370,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const actor = actorKey(session.shop, sessionToken.sub);
   try {
     if (intent === "kill-switch-on" || intent === "kill-switch-off") {
-      await requirePilotRole({
+      await requirePilotRouteAction({
         db: prisma,
         merchantId: merchant.id,
         actor,
-        allowed: ["OWNER", "OPERATOR"],
+        action:
+          intent === "kill-switch-on"
+            ? "operations:kill-switch-on"
+            : "operations:kill-switch-off",
       });
       const active = intent === "kill-switch-on";
       await setMerchantKillSwitch({

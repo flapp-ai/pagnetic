@@ -41,14 +41,14 @@ async function fixture() {
   } };
 }
 
-test("customer data downloads never bootstrap owners and reject viewer/operator, foreign tenant and fallback actors", async () => {
+test("customer data downloads never bootstrap owners and reject viewer/setup/operator, foreign tenant and fallback actors", async () => {
   const f = await fixture();
   try {
     await assert.rejects(accessCustomerPrivacyArtifact({ ...f.args, ordinal: 0 }), /PRIVACY_ACCESS_DENIED/);
     assert.equal(await f.db.pilotRole.count(), 0);
     const role = await f.db.pilotRole.create({ data: { merchantId: f.merchant.id, actorKey: actor,
       role: "VIEWER", grantedBy: "test" } });
-    for (const name of ["VIEWER", "OPERATOR"]) {
+    for (const name of ["VIEWER", "SETUP", "OPERATOR"]) {
       await f.db.pilotRole.update({ where: { id: role.id }, data: { role: name } });
       await assert.rejects(accessCustomerPrivacyArtifact({ ...f.args, ordinal: 0 }), /PRIVACY_ACCESS_DENIED/);
     }

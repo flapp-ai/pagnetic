@@ -95,7 +95,7 @@ for (const connectionLimit of [1, 4]) {
       await fixture.close();
     }
   });
-  test(`distinct Shopify staff bootstrap to one OWNER and later OPERATORs (pool ${connectionLimit})`, async () => {
+  test(`distinct Shopify staff bootstrap to one OWNER and later SETUP roles (pool ${connectionLimit})`, async () => {
     const fixture = database(connectionLimit);
     try {
       const merchant = await fixture.db.merchant.create({
@@ -112,7 +112,7 @@ for (const connectionLimit of [1, 4]) {
         ),
       );
       assert.equal(roles.filter((role) => role?.role === "OWNER").length, 1);
-      assert.equal(roles.filter((role) => role?.role === "OPERATOR").length, 3);
+      assert.equal(roles.filter((role) => role?.role === "SETUP").length, 3);
       assert.equal(
         await fixture.db.pilotRole.count({
           where: { merchantId: merchant.id, role: "OWNER" },
@@ -121,7 +121,7 @@ for (const connectionLimit of [1, 4]) {
       );
       assert.equal(
         await fixture.db.pilotRole.count({
-          where: { merchantId: merchant.id, role: "OPERATOR" },
+          where: { merchantId: merchant.id, role: "SETUP" },
         }),
         3,
       );
@@ -183,7 +183,7 @@ test("bootstrap preserves existing OPERATOR and inactive OWNER without privilege
       merchantId: merchant.id,
       actor: "new-actor",
     });
-    assert.equal(newRole?.role, "OPERATOR");
+    assert.equal(newRole?.role, "SETUP");
     assert.equal(newRole?.grantedBy, "SYSTEM_SHOPIFY_STAFF_BOOTSTRAP");
     assert.equal(
       (
@@ -191,10 +191,10 @@ test("bootstrap preserves existing OPERATOR and inactive OWNER without privilege
           db: fixture.db,
           merchantId: merchant.id,
           actor: "new-actor",
-          allowed: ["OPERATOR"],
+          allowed: ["SETUP"],
         })
       ).role,
-      "OPERATOR",
+      "SETUP",
     );
     await assert.rejects(
       () =>

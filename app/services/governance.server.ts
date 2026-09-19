@@ -9,6 +9,7 @@ import { validateCampaignEvidenceInput } from "./message-diagnosis-v2";
 import { canAcceptPublicBetaStore } from "./public-beta-capacity";
 
 export const GOVERNANCE_POLICY_VERSION = "claims-safety-v0.2";
+export const PRODUCT_SOURCE_NORMALIZATION_VERSION = "structured-description-v2";
 export const DEFAULT_ANGLES = [
   {
     key: "universal",
@@ -212,10 +213,13 @@ export function productDescriptionText(
   descriptionHtml?: string,
 ) {
   const plain = normalizedText(description);
-  // Keep the canonical Admin API plaintext when it already has enough usable
-  // sentence boundaries. Consult HTML only when Shopify's plaintext flattening
-  // has run distinct list items together and would otherwise block onboarding.
-  if (!descriptionHtml?.trim() || descriptionStatements(plain).length >= 3)
+  if (!descriptionHtml?.trim()) return plain;
+  // Shopify plaintext can contain several punctuated introductory sentences
+  // while still flattening the factual <li> items that follow. Preserve the
+  // structured representation whenever list/break boundaries are present;
+  // paragraph-only HTML continues to use Shopify's canonical plaintext.
+  const hasStructuredBoundaries = /<\s*(?:li|br|hr)\b/i.test(descriptionHtml);
+  if (!hasStructuredBoundaries && descriptionStatements(plain).length >= 3)
     return plain;
   const structured = descriptionHtml
     .replace(/<\s*(?:br|hr)\b[^>]*\/?\s*>/gi, " • ")
@@ -226,6 +230,16 @@ export function productDescriptionText(
     .trim()
     .replace(/^•\s*|\s*•$/g, "")
     .trim() || plain;
+}
+
+type GovernanceDb = PrismaClient | Prisma.TransactionClient;
+
+async function inTransaction<T>(
+  db: GovernanceDb,
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
+) {
+  if ("$transaction" in db) return db.$transaction(operation);
+  return operation(db);
 }
 
 function normalizedMappingContext(value: string) {
@@ -442,6 +456,7 @@ export async function syncProducts(args: {
       variants: sourceProduct.variants.nodes,
     };
     const sourceHash = hashValue(snapshot);
+    const sourceVersion = `${snapshot.updatedAt}:${PRODUCT_SOURCE_NORMALIZATION_VERSION}:${sourceHash.slice(0, 16)}`;
     await db.$transaction(async (tx) => {
       await args.assertActive?.(tx);
       const existing = await tx.product.findUnique({
@@ -451,15 +466,34 @@ export async function syncProducts(args: {
           shopifyProductId: sourceProduct.id,
         },
       },
-      select: { id: true, sourceHash: true },
+      select: { id: true, sourceHash: true, sourceVersion: true },
     });
 
-    if (existing && existing.sourceHash !== sourceHash) {
+    const sourceChanged = Boolean(
+      existing &&
+        (existing.sourceHash !== sourceHash ||
+          existing.sourceVersion !== sourceVersion),
+    );
+    if (existing && sourceChanged) {
+      const staleAt = new Date();
       const stale = await tx.experienceVersion.updateMany({
-        where: { productId: existing.id, status: "APPROVED_ACTIVE" },
-        data: { status: "STALE_REVIEW_REQUIRED", staleAt: new Date() },
+        where: {
+          productId: existing.id,
+          status: { in: ["DRAFT", "APPROVED_ACTIVE"] },
+          staleAt: null,
+        },
+        data: { status: "STALE_REVIEW_REQUIRED", staleAt },
       });
       staleCount += stale.count;
+      await tx.messageDiagnosis.updateMany({
+        where: {
+          merchantId: merchant.id,
+          productId: existing.id,
+          sourceVersion: { not: sourceVersion },
+          status: { not: "STALE_REVIEW_REQUIRED" },
+        },
+        data: { status: "STALE_REVIEW_REQUIRED", expiresAt: staleAt },
+      });
       await tx.adaptivePackageReview.updateMany({
         where: {
           merchantId: merchant.id,
@@ -481,7 +515,7 @@ export async function syncProducts(args: {
         title: snapshot.title,
         handle: snapshot.handle,
         status: snapshot.status,
-        sourceVersion: snapshot.updatedAt,
+        sourceVersion,
         sourceHash,
         sourceSnapshot: JSON.stringify(snapshot),
         syncedAt: new Date(),
@@ -492,17 +526,17 @@ export async function syncProducts(args: {
         title: snapshot.title,
         handle: snapshot.handle,
         status: snapshot.status,
-        sourceVersion: snapshot.updatedAt,
+        sourceVersion,
         sourceHash,
         sourceSnapshot: JSON.stringify(snapshot),
       },
     });
 
-    if (existing && existing.sourceHash !== sourceHash) {
+    if (existing && sourceChanged) {
       await tx.evidenceObject.updateMany({
         where: {
           productId: product.id,
-          sourceVersion: { not: snapshot.updatedAt },
+          sourceVersion: { not: sourceVersion },
           merchantStatus: "APPROVED",
         },
         data: { merchantStatus: "STALE" },
@@ -514,16 +548,20 @@ export async function syncProducts(args: {
         merchantId_sourceId_sourceVersion: {
           merchantId: merchant.id,
           sourceId: `${sourceProduct.id}:product`,
-          sourceVersion: snapshot.updatedAt,
+          sourceVersion,
         },
       },
-      update: {},
+      update: {
+        productId: product.id,
+        payloadJson: JSON.stringify(snapshot),
+        contentHash: sourceHash,
+      },
       create: {
         merchantId: merchant.id,
         productId: product.id,
         sourceType: "SHOPIFY_PRODUCT",
         sourceId: `${sourceProduct.id}:product`,
-        sourceVersion: snapshot.updatedAt,
+        sourceVersion,
         payloadJson: JSON.stringify(snapshot),
         contentHash: sourceHash,
       },
@@ -589,17 +627,24 @@ export async function syncProducts(args: {
           merchantId_sourceId_sourceVersion: {
             merchantId: merchant.id,
             sourceId: evidence.sourceId,
-            sourceVersion: snapshot.updatedAt,
+            sourceVersion,
           },
         },
-        update: {},
+        update: {
+          productId: product.id,
+          sourceDocumentId: sourceDocument.id,
+          verbatimText: evidence.verbatimText,
+          productScope: sourceProduct.id,
+          riskClass: evidence.riskClass,
+          sourceHash: hashValue(evidence.verbatimText),
+        },
         create: {
           merchantId: merchant.id,
           productId: product.id,
           sourceDocumentId: sourceDocument.id,
           sourceType: "SHOPIFY_PRODUCT_FIELD",
           sourceId: evidence.sourceId,
-          sourceVersion: snapshot.updatedAt,
+          sourceVersion,
           verbatimText: evidence.verbatimText,
           productScope: sourceProduct.id,
           riskClass: evidence.riskClass,
@@ -1112,6 +1157,97 @@ export async function buildDraftLibrary(args: {
   };
 }
 
+function campaignDraftUnavailableMessage(status: string) {
+  if (status === "NO_DISTINCT_DRAFT") {
+    return "No distinct source-backed campaign message could be created. Choose a different angle or add product facts that specifically support this campaign.";
+  }
+  if (status === "UNSUPPORTED_SOURCE") {
+    return "This product is outside the supported low-risk English workflow. Choose another product or update its source before creating the campaign.";
+  }
+  return "Pagnetic could not create a source-backed campaign message. Add at least three specific product facts, including one that supports the campaign promise, then try again.";
+}
+
+/**
+ * Creates the merchant's campaign setup as one safety unit. Evidence approval,
+ * mapping persistence, diagnosis and draft creation either all commit or all
+ * roll back, so a failed first-run draft cannot leave an active orphan mapping.
+ */
+export async function createSourceBackedCampaignDraft(args: {
+  db: PrismaClient;
+  merchantId: string;
+  productId: string;
+  angleId: string;
+  utmSource: string;
+  utmCampaign: string;
+  utmContent: string;
+  campaignAdText?: string;
+  campaignLocale?: string;
+  fallback: string;
+  actor: string;
+  assertActive?: (
+    db: PrismaClient | Prisma.TransactionClient,
+  ) => Promise<void>;
+}) {
+  return args.db.$transaction(async (tx) => {
+    await args.assertActive?.(tx);
+    const product = await tx.product.findFirst({
+      where: { id: args.productId, merchantId: args.merchantId },
+    });
+    if (!product) throw new Error("Select a valid synced product.");
+
+    const evidence = await tx.evidenceObject.findMany({
+      where: {
+        merchantId: args.merchantId,
+        productId: product.id,
+        sourceVersion: product.sourceVersion,
+      },
+    });
+    const approvable = evidence.filter(
+      (item) => item.riskClass !== "HIGH" && item.riskClass !== "PROHIBITED",
+    );
+    if (!approvable.some((item) => item.sourceId.endsWith(":title"))) {
+      throw new Error("Current product-title evidence is missing. Sync this product and try again.");
+    }
+    await tx.evidenceObject.updateMany({
+      where: { id: { in: approvable.map((item) => item.id) } },
+      data: { merchantStatus: "APPROVED" },
+    });
+    await tx.auditLog.create({
+      data: {
+        merchantId: args.merchantId,
+        actor: args.actor,
+        action: "CURRENT_PRODUCT_EVIDENCE_APPROVED",
+        resourceType: "PRODUCT",
+        resourceId: product.id,
+        detailsJson: JSON.stringify({
+          evidenceIds: approvable.map((item) => item.id),
+          sourceVersion: product.sourceVersion,
+          trigger: "CAMPAIGN_DRAFT",
+        }),
+      },
+    });
+
+    const mapping = await createCampaignMapping({ ...args, db: tx });
+    const drafted = await createDiagnosisDraftV2({
+      db: tx,
+      merchantId: args.merchantId,
+      productId: product.id,
+      campaignMappingId: mapping.id,
+      actor: args.actor,
+      assertActive: args.assertActive,
+    });
+    if (!drafted.experience) {
+      throw new Error(campaignDraftUnavailableMessage(drafted.status));
+    }
+    return {
+      mapping,
+      draft: drafted.experience,
+      diagnosis: drafted.diagnosis,
+      approvedEvidenceCount: approvable.length,
+    };
+  });
+}
+
 function editableText(value: string, maximum: number) {
   const result = normalizedText(value).slice(0, maximum);
   return result || null;
@@ -1372,7 +1508,7 @@ export async function approveExperience(args: {
 }
 
 export async function createCampaignMapping(args: {
-  db: PrismaClient;
+  db: GovernanceDb;
   merchantId: string;
   angleId: string;
   utmSource: string;
@@ -1422,7 +1558,7 @@ export async function createCampaignMapping(args: {
   });
   const version = (latest._max.version ?? 0) + 1;
 
-  return args.db.$transaction(async (tx) => {
+  return inTransaction(args.db, async (tx) => {
     const campaignDocument = campaignEvidence
       ? await tx.sourceDocument.upsert({
           where: {
