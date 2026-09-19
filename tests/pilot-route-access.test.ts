@@ -8,6 +8,7 @@ import test from "node:test";
 import { PrismaClient } from "@prisma/client";
 
 import { ensurePilotRole } from "../app/services/access.server";
+import { getStartedAccessPresentation } from "../app/services/pilot-access-presentation";
 import {
   pilotRolesForRouteAction,
   requirePilotRouteAction,
@@ -78,6 +79,21 @@ test("route policy gives SETUP only catalog and draft configuration", () => {
     assert.ok(pilotRolesForRouteAction(action).includes("SETUP"), action);
     assert.ok(pilotRolesForRouteAction(action).includes("VIEWER"), action);
   }
+});
+
+test("setup-only onboarding presentation hides owner approval and operator stages", () => {
+  assert.deepEqual(getStartedAccessPresentation("SETUP"), {
+    canApproveBrand: false,
+    canBuildLibrary: false,
+    canOpenOwnerReview: false,
+    canOpenOwnerStages: false,
+  });
+  assert.deepEqual(getStartedAccessPresentation("OWNER"), {
+    canApproveBrand: true,
+    canBuildLibrary: true,
+    canOpenOwnerReview: true,
+    canOpenOwnerStages: true,
+  });
 });
 
 test("sensitive route loaders are wired to restricted route policies", () => {

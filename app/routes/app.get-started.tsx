@@ -8,10 +8,7 @@ import {
 } from "react-router";
 
 import prisma from "../db.server";
-import {
-  actorKey,
-  ensurePilotRole,
-} from "../services/access.server";
+import { actorKey, ensurePilotRole } from "../services/access.server";
 import {
   loadActivation,
   selectHeroProduct,
@@ -23,6 +20,7 @@ import {
   syncProducts,
 } from "../services/governance.server";
 import { authenticateAdmin } from "../shopify.server";
+import { getStartedAccessPresentation } from "../services/pilot-access-presentation";
 import { requirePilotRouteAction } from "../services/pilot-route-access.server";
 import styles from "../styles/governance.module.css";
 
@@ -30,7 +28,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
   const actor = actorKey(session.shop, sessionToken.sub);
-  await ensurePilotRole({ db: prisma, merchantId: merchant.id, actor });
+  const pilotRole = await ensurePilotRole({
+    db: prisma,
+    merchantId: merchant.id,
+    actor,
+  });
   const activation = await loadActivation({
     db: prisma,
     merchantId: merchant.id,
@@ -53,6 +55,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       benefits: JSON.parse(experience.benefitsJson) as string[],
     }));
   return {
+    currentRole: pilotRole.role,
     shop: session.shop,
     products: activation.products.map((product) => ({
       id: product.id,
@@ -179,6 +182,7 @@ export default function GetStarted() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const busy = useNavigation().state !== "idle";
+  const access = getStartedAccessPresentation(data.currentRole);
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -245,17 +249,27 @@ export default function GetStarted() {
           </p>
         </div>
         <div className={styles.activationList}>
-          {data.journey.steps.map((step) => (
-            <a data-complete={step.complete} href={step.href} key={step.key}>
-              <span>{step.complete ? "✓" : step.number}</span>
-              <div>
-                <strong>{step.label}</strong>
-                <p>{step.detail}</p>
-              </div>
-              <b>{step.complete ? "Complete" : step.cta} →</b>
-            </a>
-          ))}
+          {data.journey.steps
+            .filter(
+              (step) => access.canOpenOwnerStages || step.href.startsWith("#"),
+            )
+            .map((step) => (
+              <a data-complete={step.complete} href={step.href} key={step.key}>
+                <span>{step.complete ? "✓" : step.number}</span>
+                <div>
+                  <strong>{step.label}</strong>
+                  <p>{step.detail}</p>
+                </div>
+                <b>{step.complete ? "Complete" : step.cta} →</b>
+              </a>
+            ))}
         </div>
+        {!access.canOpenOwnerStages ? (
+          <p className={styles.muted}>
+            After campaign setup, the store owner completes approval, activation
+            and measurement.
+          </p>
+        ) : null}
       </section>
 
       <section className={styles.section} id="catalog">
@@ -325,7 +339,7 @@ export default function GetStarted() {
                   "More catalog text will improve the profile."}
               </small>
             </div>
-            {data.brand.status !== "APPROVED" ? (
+            {data.brand.status !== "APPROVED" && access.canApproveBrand ? (
               <Form method="post">
                 <input name="intent" type="hidden" value="approve-brand" />
                 <button
@@ -336,10 +350,14 @@ export default function GetStarted() {
                   Approve brand profile
                 </button>
               </Form>
-            ) : (
+            ) : data.brand.status === "APPROVED" ? (
               <span className={styles.statusBadge} data-status="READY">
                 APPROVED
               </span>
+            ) : (
+              <small>
+                Source-derived profile ready for the store owner to approve.
+              </small>
             )}
           </div>
         ) : (
@@ -353,6 +371,7 @@ export default function GetStarted() {
         )}
         {data.brand?.status === "APPROVED" &&
         data.hero &&
+        access.canBuildLibrary &&
         !data.facts.draftLibraryCreated ? (
           <Form method="post">
             <input name="intent" type="hidden" value="build-library" />
@@ -387,9 +406,16 @@ export default function GetStarted() {
               ))}
             </div>
             <div className={styles.actionRow}>
-              <Link className={styles.primaryButton} to="/app/governance">
-                Review evidence and approve
-              </Link>
+              {access.canOpenOwnerReview ? (
+                <Link className={styles.primaryButton} to="/app/governance">
+                  Review evidence and approve
+                </Link>
+              ) : (
+                <span className={styles.muted}>
+                  Store owner approval required before anything can reach
+                  shoppers.
+                </span>
+              )}
               <Link className={styles.secondaryLink} to="/app/preview">
                 Open storefront preview
               </Link>

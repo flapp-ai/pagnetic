@@ -1,9 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 
-import {
-  requirePilotRole,
-  type PilotRoleName,
-} from "./access.server";
+import { requirePilotRole, type PilotRoleName } from "./access.server";
 
 export type PilotRouteAction =
   | "get-started:sync-products"
