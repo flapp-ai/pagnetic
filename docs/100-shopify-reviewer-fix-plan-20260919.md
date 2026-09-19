@@ -24,7 +24,7 @@ This is the implementation record for the findings in [doc99](./99-shopify-revie
 - Shopify app/theme/measurement extension build: passed.
 - Partner readiness: **31/31 passed** against a disposable database containing all 29 repository migrations.
 - `git diff --check`: passed.
-- The corrected source is pushed and deployed through Fly release 57 on the existing single machine. The invited reviewer store is configured through a source-backed draft only; no storefront activation, experiment, paid capacity, reviewer response or resubmission occurred.
+- The corrected source is pushed and the evidence bundle is deployed through Fly release 58 on the existing single machine. The invited reviewer store is configured through a source-backed draft only; no storefront activation, experiment, paid capacity, reviewer response or resubmission occurred.
 
 The check aligns with Shopify requirements 2.1.1/2.1.2 for critical/minor UI failures and 2.1.4 for accurate synchronized data. Local evidence does not replace Shopify's requested live reviewer-store proof.
 

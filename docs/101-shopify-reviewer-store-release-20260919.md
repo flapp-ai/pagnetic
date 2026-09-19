@@ -5,8 +5,8 @@ Status: **LIVE QA PASSED — FINAL SHOPIFY RESPONSE/RESUBMISSION REQUIRES OWNER 
 
 ## Production release
 
-- GitHub `flapp-ai/pagnetic` main contains reviewer fixes through `b3ecf12b374313f52f3e24e251daa6b965575ea7`.
-- Fly release 57 runs that exact commit on the existing single machine `d8d1497a937658` in `fra`; no machine, volume or paid-service capacity was added.
+- GitHub `flapp-ai/pagnetic` main contains reviewer fixes and the reviewer-store evidence bundle through `c7c311d42e84c421ad85011d1713fdbbe80fc569`.
+- Fly release 58 runs that exact commit on the existing single machine `d8d1497a937658` in `fra`; no machine, volume or paid-service capacity was added.
 - Fly reports `1/1` health checks passing and `https://pagnetic.fly.dev/healthz` returns HTTP 200.
 - Startup found all 29 migrations with none pending. The encrypted startup backup verified; remote backup objects were not expanded by this work.
 
@@ -33,9 +33,9 @@ The live action returned: `The campaign promise is linked to a source-backed dra
 
 ## Reviewer video
 
-Prepared public asset: `https://pagnetic.fly.dev/reviewer-6f2c9b31/pagnetic-shopify-review-20260919.webm`
+Verified public asset: `https://pagnetic.fly.dev/reviewer-6f2c9b31/pagnetic-shopify-review-20260919.webm`
 
-The video is an actual tab-only recording of Shopify's invited store, followed end-to-end and re-recorded with burned-in English explanations. It is approximately 3 minutes 40 seconds, 3456×1662, 13,925,801 bytes, SHA-256 `856eeabcc8ee58860b95d0e038c85d594a261a34d00c2168b3317ad0ed857f53`. It shows onboarding status, the product/source, exact UTM/ad configuration, successful draft, preview/evidence, empty Results and read-only Settings. It does not claim that a draft is live or that sales lift exists.
+The video is an actual tab-only recording of Shopify's invited store, followed end-to-end and re-recorded with burned-in English explanations. It is approximately 3 minutes 40 seconds, 3456×1662, 13,925,801 bytes, SHA-256 `856eeabcc8ee58860b95d0e038c85d594a261a34d00c2168b3317ad0ed857f53`. The public response returns HTTP 200 as `video/webm`, supports byte ranges and matches that SHA-256 exactly. It shows onboarding status, the product/source, exact UTM/ad configuration, successful draft, preview/evidence, empty Results and read-only Settings. It does not claim that a draft is live or that sales lift exists.
 
 ## Exact draft response to Shopify
 

@@ -1,6 +1,6 @@
 # Adaptive Storefront Documentation
 
-Current implementation (2026-09-19): [doc101](./101-shopify-reviewer-store-release-20260919.md) records Fly release57, 459 passing tests, successful invited-store UTM/source-backed-draft QA, the new store-specific English-captioned video and exact Shopify response. The response is prepared but resubmission still requires explicit owner approval.
+Current implementation (2026-09-19): [doc101](./101-shopify-reviewer-store-release-20260919.md) records Fly release58, 459 passing tests, successful invited-store UTM/source-backed-draft QA, the publicly verified store-specific English-captioned video and exact Shopify response. The response is prepared but resubmission still requires explicit owner approval.
 
 Current verdict (2026-09-19): **live candidate passed; submission hold**. Reviewer-store setup and read-only proof now pass; no experiment or storefront activation occurred. Shopify has not yet received the new response/video.
 
