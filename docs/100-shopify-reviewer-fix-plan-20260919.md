@@ -1,7 +1,7 @@
 # Shopify reviewer remediation — integrated fix and release gate
 
 Date: 2026-09-19
-Status: **LOCAL RELEASE CANDIDATE PASSED — DEPLOYMENT AND RESUBMISSION NOT AUTHORIZED**
+Status: **DEPLOYED AND LIVE-QA PASSED — RESUBMISSION NOT AUTHORIZED**
 
 This is the implementation record for the findings in [doc99](./99-shopify-reviewer-qa-20260919.md). It supersedes doc98's earlier candidate design. The live Fly release remains unchanged until the owner approves release.
 
@@ -17,14 +17,14 @@ This is the implementation record for the findings in [doc99](./99-shopify-revie
 
 ## Integrated release evidence
 
-- `pnpm check`: **457/457 tests passed**.
+- Final full suite: **459/459 tests passed**.
 - TypeScript: passed.
 - ESLint: passed.
 - React Router production client/server build: passed.
 - Shopify app/theme/measurement extension build: passed.
 - Partner readiness: **31/31 passed** against a disposable database containing all 29 repository migrations.
 - `git diff --check`: passed.
-- No production deployment, paid service, subscription action, product/store mutation, experiment activation, reviewer response, push or resubmission occurred.
+- The corrected source is pushed and deployed through Fly release 57 on the existing single machine. The invited reviewer store is configured through a source-backed draft only; no storefront activation, experiment, paid capacity, reviewer response or resubmission occurred.
 
 The check aligns with Shopify requirements 2.1.1/2.1.2 for critical/minor UI failures and 2.1.4 for accurate synchronized data. Local evidence does not replace Shopify's requested live reviewer-store proof.
 
@@ -44,4 +44,4 @@ Local environment note: Prisma's macOS schema-engine command returned a generic 
 
 ## Release decision
 
-The source is ready for the owner-controlled deployment gate. It is **not yet ready to click Resubmit**, because Shopify explicitly requested proof from its live test store and the corrected code is not live. A successful local build cannot establish that proof.
+Deployment and invited-store QA now pass. The final response and store-specific video are prepared in [doc101](./101-shopify-reviewer-store-release-20260919.md). It is **ready for owner review but not authorized to click Resubmit**.

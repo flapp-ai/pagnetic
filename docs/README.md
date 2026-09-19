@@ -1,8 +1,8 @@
 # Adaptive Storefront Documentation
 
-Current implementation (2026-09-19): [doc100](./100-shopify-reviewer-fix-plan-20260919.md) records the integrated reviewer-remediation candidate, 457-test release gate and exact owner-approved deployment/live-proof sequence. Source is locally ready for deployment review; Fly and Shopify submission remain unchanged.
+Current implementation (2026-09-19): [doc101](./101-shopify-reviewer-store-release-20260919.md) records Fly release57, 459 passing tests, successful invited-store UTM/source-backed-draft QA, the new store-specific English-captioned video and exact Shopify response. The response is prepared but resubmission still requires explicit owner approval.
 
-Current verdict (2026-09-19): **release hold**. [Reviewer-style QA report](./99-shopify-reviewer-qa-20260919.md) supersedes doc98's readiness implication with reproduced setup, access, source-freshness and UI findings. Real reviewer-store end-to-end proof remains incomplete; nothing was deployed or resubmitted.
+Current verdict (2026-09-19): **live candidate passed; submission hold**. Reviewer-store setup and read-only proof now pass; no experiment or storefront activation occurred. Shopify has not yet received the new response/video.
 
 Latest review action (2026-09-19): [doc98](./98-shopify-reviewer-store-remediation-20260919.md) records Shopify's reviewer-store request, the freshly reproduced staff-role/product-source blockers, the locally verified 445-test release candidate, and the exact post-approval deployment/configuration/video sequence. The candidate is not deployed or resubmitted.
 

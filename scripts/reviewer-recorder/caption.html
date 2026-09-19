@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pagnetic Shopify reviewer walkthrough</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #0b1220;
+        color: white;
+        font:
+          18px/1.4 system-ui,
+          sans-serif;
+      }
+      main {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+      figure {
+        width: 100%;
+        margin: 0;
+        position: relative;
+      }
+      video {
+        display: block;
+        width: 100%;
+        max-height: 100vh;
+        background: #0b1220;
+      }
+      #caption {
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        bottom: 3%;
+        padding: 0.65rem 1rem;
+        border-radius: 0.5rem;
+        background: rgba(5, 13, 25, 0.92);
+        text-align: center;
+        font-size: clamp(18px, 1.65vw, 30px);
+        font-weight: 650;
+        text-shadow: 0 1px 2px #000;
+      }
+      #caption:empty {
+        display: none;
+      }
+      #metadata {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.3rem;
+        background: rgba(5, 13, 25, 0.8);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <figure>
+        <video id="video" controls preload="auto" src="/recording.webm"></video>
+        <div id="caption" aria-live="polite"></div>
+        <div id="metadata">Loading reviewer recording…</div>
+      </figure>
+    </main>
+    <script>
+      const video = document.querySelector("#video");
+      const caption = document.querySelector("#caption");
+      const metadata = document.querySelector("#metadata");
+      const cues = [
+        [
+          0,
+          18,
+          "Shopify reviewer-store walkthrough — Pagnetic setup-only access; no storefront change is made.",
+        ],
+        [
+          18,
+          46,
+          "Overview fails safe: the original storefront stays active until the store owner approves a bounded plan.",
+        ],
+        [
+          46,
+          75,
+          "Get started confirms the selected product and source-derived message; owner approval and activation stay separated.",
+        ],
+        [
+          75,
+          92,
+          "Messages shows the current Shopify product source and the exact source-backed draft.",
+        ],
+        [
+          92,
+          112,
+          "Campaign setup uses the exact UTM source, campaign, content label, message angle and ad wording.",
+        ],
+        [
+          112,
+          132,
+          "Pagnetic verifies that the ad promise matches current product evidence and saves a draft without publishing.",
+        ],
+        [
+          132,
+          155,
+          "Preview compares the current catalog source with the proposed panel and its exact evidence trace.",
+        ],
+        [
+          155,
+          180,
+          "Results stays empty and disabled until a reviewed experiment exists; no lift or revenue is invented.",
+        ],
+        [
+          180,
+          230,
+          "Settings confirms read-only setup access, Original-only serving, Shopify-managed pricing and support links.",
+        ],
+      ];
+      video.addEventListener("loadedmetadata", () => {
+        metadata.textContent = `Actual reviewer-store recording · ${video.videoWidth}×${video.videoHeight} · continuous walkthrough`;
+      });
+      video.addEventListener("timeupdate", () => {
+        caption.textContent =
+          cues.find(
+            ([start, end]) =>
+              video.currentTime >= start && video.currentTime < end,
+          )?.[2] ?? "";
+      });
+      video.addEventListener("ended", () => {
+        caption.textContent = "End of reviewer-store walkthrough.";
+      });
+    </script>
+  </body>
+</html>

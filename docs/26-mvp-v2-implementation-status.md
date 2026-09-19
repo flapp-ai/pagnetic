@@ -1,5 +1,9 @@
 # Pagnetic MVP v2 — implementation status
 
+## Reviewer-store release and response prepared — 2026-09-19
+
+Fly release57 runs exact source `b3ecf12b374313f52f3e24e251daa6b965575ea7` on the unchanged single machine. Full QA passes **459/459 tests**, typecheck, lint and production build. The invited Shopify store now completes product selection, exact UTM/ad setup, source-backed drafting, preview, empty Results and read-only Settings without blank/500 pages. A new approximately3:40 English-captioned store-specific video and exact response are prepared in [doc101](./101-shopify-reviewer-store-release-20260919.md). Shopify resubmission remains owner-gated and has not occurred.
+
 ## Reviewer-remediation candidate passed locally — 2026-09-19
 
 The four follow-up QA blockers are fixed locally: least-privilege SETUP access, atomic fresh campaign drafting, stale source/draft invalidation, and truthful retry/status UI. The integrated release gate passes **457/457 tests**, typecheck, lint, production app build and Shopify extension build. [Implementation, evidence and post-approval live sequence](./100-shopify-reviewer-fix-plan-20260919.md). The live Fly release and Shopify submission are unchanged; live reviewer-store proof and explicit release/resubmission approval remain required.
