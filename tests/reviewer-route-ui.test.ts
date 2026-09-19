@@ -23,6 +23,7 @@ function renderRoute(element: ReactElement) {
 
 function messageData(status: string, options: { draft?: boolean; stale?: boolean } = {}) {
   return {
+    currentRole: "OWNER",
     products: [{ id: "product-1", title: "Travel pouch" }],
     product: {
       id: "product-1",
@@ -72,6 +73,19 @@ test("Messages renders persisted drafted diagnosis as success and keeps source r
   assert.match(html, /Refresh source review/);
   assert.match(html, /Exact proposed message/);
   assert.doesNotMatch(html, /No unsafe copy was invented/);
+});
+
+test("Messages keeps setup-only reviewers away from owner approvals", () => {
+  const html = renderRoute(createElement(MessagesView, {
+    data: { ...messageData("EXPERIENCE_DRAFTED", { draft: true }), currentRole: "SETUP" },
+    result: undefined,
+    busy: false,
+  } as never));
+
+  assert.match(html, /Draft saved for the store owner to approve/);
+  assert.doesNotMatch(html, /Approve this message/);
+  assert.doesNotMatch(html, /Prepare adaptive package for review/);
+  assert.doesNotMatch(html, /Approve this exact adaptive package/);
 });
 
 test("Messages distinguishes persisted abstention and stale diagnosis states", () => {

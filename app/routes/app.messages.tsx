@@ -122,7 +122,7 @@ export function diagnosisUiState(args: {
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, sessionToken } = await authenticateAdmin(request);
   const merchant = await ensureMerchant(prisma, session.shop);
-  await ensurePilotRole({
+  const pilotRole = await ensurePilotRole({
     db: prisma,
     merchantId: merchant.id,
     actor: actorKey(session.shop, sessionToken.sub),
@@ -191,6 +191,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   }
   return {
+    currentRole: pilotRole.role,
     products,
     product: product
       ? {
@@ -356,6 +357,7 @@ export function MessagesView({
   busy: boolean;
 }) {
   const draft = data.experiences.find((experience) => experience.status === "DRAFT");
+  const canApprove = data.currentRole === "OWNER";
   const approvedMessages = approvedMessageSummaries(data.experiences, data.product?.id ?? "");
   const adaptiveReview = data.packageReview?.package ?? null;
   const diagnosisState = data.diagnosis
@@ -466,12 +468,16 @@ export function MessagesView({
               <button className={styles.secondaryButton} disabled={busy} type="submit">Save supported edits</button>
             </Form>
           </div>
-          <Form method="post">
-            <input name="intent" type="hidden" value="approve-message" />
-            <input name="productId" type="hidden" value={data.product.id} />
-            <input name="experienceId" type="hidden" value={draft.id} />
-            <button className={styles.primaryButton} disabled={busy} type="submit">Approve this message</button>
-          </Form>
+          {canApprove ? (
+            <Form method="post">
+              <input name="intent" type="hidden" value="approve-message" />
+              <input name="productId" type="hidden" value={data.product.id} />
+              <input name="experienceId" type="hidden" value={draft.id} />
+              <button className={styles.primaryButton} disabled={busy} type="submit">Approve this message</button>
+            </Form>
+          ) : (
+            <p className={styles.muted}>Draft saved for the store owner to approve. Your setup access cannot publish or activate it.</p>
+          )}
           <p className={styles.muted}>Message approval does not start a test or authorize billing. Review the bounded test on Overview next.</p>
         </section>
       ) : null}
@@ -532,8 +538,8 @@ export function MessagesView({
             ))}
           </div>
           <Link className={styles.primaryButton} to="/app">Review test readiness</Link>
-          {data.product ? <Form method="post"><input name="intent" type="hidden" value="prepare-adaptive-package" /><input name="productId" type="hidden" value={data.product.id} /><button className={styles.secondaryButton} disabled={busy} type="submit">Prepare adaptive package for review</button></Form> : null}
-          {adaptiveReview ? (
+          {canApprove && data.product ? <Form method="post"><input name="intent" type="hidden" value="prepare-adaptive-package" /><input name="productId" type="hidden" value={data.product.id} /><button className={styles.secondaryButton} disabled={busy} type="submit">Prepare adaptive package for review</button></Form> : null}
+          {canApprove && adaptiveReview ? (
             <div className={styles.panelPreview}>
               <AdaptivePackageReviewPanel
                 package={adaptiveReview}

@@ -91,6 +91,7 @@ const overview = fixture<ComponentProps<typeof DashboardView>["data"]>({
 });
 
 const messages = fixture<ComponentProps<typeof MessagesView>["data"]>({
+  currentRole: "OWNER",
   products: [{ id: "fixture-product", title: "Trail Runner" }],
   product: {
     id: "fixture-product",
