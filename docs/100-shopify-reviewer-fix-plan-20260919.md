@@ -1,7 +1,7 @@
 # Shopify reviewer remediation — integrated fix and release gate
 
 Date: 2026-09-19
-Status: **DEPLOYED AND LIVE-QA PASSED — RESUBMISSION NOT AUTHORIZED**
+Status: **DEPLOYED, LIVE-QA PASSED AND RESUBMITTED — IN REVIEW**
 
 This is the implementation record for the findings in [doc99](./99-shopify-reviewer-qa-20260919.md). It supersedes doc98's earlier candidate design. The live Fly release remains unchanged until the owner approves release.
 
@@ -44,4 +44,4 @@ Local environment note: Prisma's macOS schema-engine command returned a generic 
 
 ## Release decision
 
-Deployment and invited-store QA now pass. The final response and store-specific video are prepared in [doc101](./101-shopify-reviewer-store-release-20260919.md). It is **ready for owner review but not authorized to click Resubmit**.
+Deployment and invited-store QA pass. After explicit owner approval, the store-specific video in [doc101](./101-shopify-reviewer-store-release-20260919.md) was submitted on 2026-09-20. Shopify now shows **In review**; this is a receipt, not approval or publication.

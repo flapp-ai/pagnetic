@@ -2,7 +2,7 @@
 
 ## Reviewer-store release and response prepared — 2026-09-19
 
-Fly release58 runs exact source `c7c311d42e84c421ad85011d1713fdbbe80fc569` on the unchanged single machine. Full QA passes **459/459 tests**, typecheck, lint and production build. The invited Shopify store now completes product selection, exact UTM/ad setup, source-backed drafting, preview, empty Results and read-only Settings without blank/500 pages. A new approximately3:40 English-captioned store-specific video is publicly verified and the exact response is prepared in [doc101](./101-shopify-reviewer-store-release-20260919.md). Shopify resubmission remains owner-gated and has not occurred.
+Fly release58 runs exact source `c7c311d42e84c421ad85011d1713fdbbe80fc569` on the unchanged single machine. Full QA passes **459/459 tests**, typecheck, lint and production build. The invited Shopify store completes product selection, exact UTM/ad setup, source-backed drafting, preview, empty Results and read-only Settings without blank/500 pages. The approximately3:40 English-captioned store-specific video was submitted after explicit owner approval on 2026-09-20; Shopify now shows **In review**. See [doc101](./101-shopify-reviewer-store-release-20260919.md).
 
 ## Reviewer-remediation candidate passed locally — 2026-09-19
 

@@ -1,7 +1,7 @@
 # Shopify reviewer-store release and resubmission package
 
 Date: 2026-09-19  
-Status: **LIVE QA PASSED — FINAL SHOPIFY RESPONSE/RESUBMISSION REQUIRES OWNER APPROVAL**
+Status: **RESUBMITTED 2026-09-20 — SHOPIFY SHOWS IN REVIEW**
 
 ## Production release
 
@@ -47,4 +47,6 @@ The video is an actual tab-only recording of Shopify's invited store, followed e
 >
 > Expected result: the campaign promise is linked to a source-backed draft. The storefront remains Original until the store owner separately approves a bounded plan and the safety checks pass. Results remains empty before an experiment exists, and setup staff cannot publish, activate, bill, export data or enter operator workspaces. We also repeated Overview, Get started, Messages, Preview, Results and Settings without a blank page, Application Error or HTTP 500.
 
-Do not send this response or click Shopify resubmit until the owner opens the hosted video and gives explicit final approval.
+## Submission receipt
+
+The owner approved resubmission on 2026-09-20. The new reviewer-store video was entered as the proof of resolution, Shopify marked the single feedback item **1/1**, and the Partner dashboard then changed to **In review — We're reviewing your response**. This confirms receipt only; Shopify has not yet approved or published the listing.
